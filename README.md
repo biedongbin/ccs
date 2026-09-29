@@ -98,6 +98,7 @@ First launch with no `~/.ccs/config.json` runs a guided setup for language and t
 | A | archive view ↔ main list |
 | d | soft-delete (moved to `~/.ccs/trash/`, see below) |
 | J / K | scroll the detail pane |
+| `o` | read the current session fullscreen (pager: j/k scroll, Space page, g/G ends, q back) — for long AI summaries |
 | y / Y | copy first question / last reply to clipboard (pbcopy) |
 | R | rename the session — equivalent to Claude Code's `/rename` (appends a `custom-title` record; the official picker shows it too) |
 | s | AI summary: runs a background `claude -p` analysis of the session (goals / progress % / branch state / issues list), result stored in `~/.ccs/summaries.json` and shown at the top of the detail pane; non-blocking — switching sessions doesn't cancel it |
@@ -168,7 +169,7 @@ Custom themes appear in the `ccs --config` theme menu automatically.
 ## Tests
 
 ```bash
-python3 test_ccs.py    # assert-style, no framework, 37 checks
+python3 test_ccs.py    # assert-style, no framework, 46 checks
 ```
 
 ## License

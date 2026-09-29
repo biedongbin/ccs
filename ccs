@@ -144,10 +144,10 @@ I18N_KEYS = (  # 有序：STRINGS 按 zip(keys, values) 展开，键序必须与
     "copied", "no_copy", "no_copy_tool", "gone_input", "gone_conf", "mk_fail",
     "op_fail", "rel_now", "rel_m", "rel_h", "rel_d",
     "ai_summary", "sum_run", "sum_started", "sum_done", "sum_fail",
-    "rename_p", "rename_ok")
+    "rename_p", "rename_ok", "pager_hint")
 
 _LANG_DATA = {
-"zh": (" jk 选择 | / 搜索 | Tab 选项目 | Esc 返回 | Enter cmux恢复 | e 终端恢复 | a/u 归档还原 | d 删 | A 归档区 | J/K 详情滚动 | y/Y 复制首问/末答 | R 改名 | s 总结 | r 重扫 | q 退出",
+"zh": (" jk 选择 | / 搜索 | Tab 选项目 | Esc 返回 | Enter cmux恢复 | e 终端恢复 | a/u 归档还原 | d 删 | A 归档区 | J/K 详情滚动 | y/Y 复制首问/末答 | o 阅读 | R 改名 | s 总结 | r 重扫 | q 退出",
        "ccs · {n}", "【归档区】", "[项目: {v}]", "[搜: {v}]", "+ 详情", "时间     标题",
        "标题", "项目", "分支", "ID", "首条提问", "最后回复", "(无)",
        "搜索: ", " 项目过滤 j/k选择 回车确认 Esc取消 ", "全部", "终端太小 ({w}x{h}，需 ≥60x12)，q 退出",
@@ -156,8 +156,9 @@ _LANG_DATA = {
        "原目录 {p} 不存在，输入恢复目录(回车空=取消): ", "目录不存在: {p}，回车=自动创建 / 其他键=取消 ",
        "创建失败: {e}", "操作失败: {e}", "刚刚", "{n}分钟前", "{n}小时前", "{n}天前",
        "AI 总结", "总结生成中…", "总结任务已发起: {t}", "总结完成: {t}", "总结失败: {t}",
-       "重命名 [{t}]: ", "已改名: {t}"),
-"en": (" jk move | / search | Tab projects | Esc back | Enter cmux resume | e terminal resume | a/u archive-restore | d delete | A archive | J/K detail scroll | y/Y copy first/last | R rename | s summary | r rescan | q quit",
+       "重命名 [{t}]: ", "已改名: {t}",
+       " j/k 滚动 | Space 翻页 | g/G 首尾 | q 返回列表"),
+"en": (" jk move | / search | Tab projects | Esc back | Enter cmux resume | e terminal resume | a/u archive-restore | d delete | A archive | J/K detail scroll | y/Y copy first/last | o read | R rename | s summary | r rescan | q quit",
        "ccs · {n}", "[ARCHIVE]", "[proj: {v}]", "[q: {v}]", "+ detail", "time     title",
        "title", "project", "branch", "ID", "first ask", "last reply", "(none)",
        "search: ", " filter: j/k select, Enter confirm, Esc cancel ", "ALL",
@@ -168,8 +169,9 @@ _LANG_DATA = {
        "dir not found: {p}, Enter=create / other key=cancel ",
        "mkdir failed: {e}", "operation failed: {e}", "just now", "{n}m ago", "{n}h ago", "{n}d ago",
        "AI summary", "summarizing…", "summary started: {t}", "summary done: {t}", "summary failed: {t}",
-       "rename [{t}]: ", "renamed: {t}"),
-"ja": (" jk移動 | /検索 | Tabプロジェクト | Esc戻る | Enter cmux復元 | e端末復元 | a/uアーカイブ | d削除 | Aアーカイブ | J/Kスクロール | y/Yコピー | R改名 | s要約 | r再読込 | q終了",
+       "rename [{t}]: ", "renamed: {t}",
+       " j/k scroll | Space page | g/G ends | q back"),
+"ja": (" jk移動 | /検索 | Tabプロジェクト | Esc戻る | Enter cmux復元 | e端末復元 | a/uアーカイブ | d削除 | Aアーカイブ | J/Kスクロール | y/Yコピー | o閲読 | R改名 | s要約 | r再読込 | q終了",
        "ccs · {n}", "【アーカイブ】", "[proj: {v}]", "[検: {v}]", "+ 詳細", "時刻     タイトル",
        "タイトル", "プロジェクト", "ブランチ", "ID", "最初の質問", "最後の返信", "(なし)",
        "検索: ", " プロジェクト選択 j/k選択 Enter確定 Esc取消 ", "すべて",
@@ -180,8 +182,9 @@ _LANG_DATA = {
        "ディレクトリなし: {p}、Enter=作成 / 他キー=取消 ",
        "作成失敗: {e}", "操作失敗: {e}", "たった今", "{n}分前", "{n}時間前", "{n}日前",
        "AI 要約", "要約生成中…", "要約タスク開始: {t}", "要約完了: {t}", "要約失敗: {t}",
-       "名前変更 [{t}]: ", "変更後: {t}"),
-"ko": (" jk 이동 | / 검색 | Tab 프로젝트 | Esc 뒤로 | Enter cmux복원 | e 터미널 복원 | a/u 보관 | d 삭제 | A 보관함 | J/K 스크롤 | y/Y 복사 | R 이름변경 | s 요약 | r 재스캔 | q 종료",
+       "名前変更 [{t}]: ", "変更後: {t}",
+       " j/kスクロール | Space改ページ | g/G先頭/末尾 | q戻る"),
+"ko": (" jk 이동 | / 검색 | Tab 프로젝트 | Esc 뒤로 | Enter cmux복원 | e 터미널 복원 | a/u 보관 | d 삭제 | A 보관함 | J/K 스크롤 | y/Y 복사 | o 읽기 | R 이름변경 | s 요약 | r 재스캔 | q 종료",
        "ccs · {n}", "[보관함]", "[proj: {v}]", "[q: {v}]", "+ 상세", "시간     제목",
        "제목", "프로젝트", "브랜치", "ID", "첫 질문", "마지막 답변", "(없음)",
        "검색: ", " 프로젝트 필터 j/k선택 Enter확정 Esc취소 ", "전체",
@@ -192,8 +195,9 @@ _LANG_DATA = {
        "디렉터리 없음: {p}, Enter=생성 / 다른 키=취소 ",
        "생성 실패: {e}", "작업 실패: {e}", "방금", "{n}분 전", "{n}시간 전", "{n}일 전",
        "AI 요약", "요약 생성 중…", "요약 시작: {t}", "요약 완료: {t}", "요약 실패: {t}",
-       "이름 변경 [{t}]: ", "변경됨: {t}"),
-"es": (" jk mover | / buscar | Tab proyectos | Esc atrás | Enter cmux reanudar | e terminal | a/u archivar | d borrar | A archivo | J/K scroll | y/Y copiar | R renombrar | s resumen | r reescanear | q salir",
+       "이름 변경 [{t}]: ", "변경됨: {t}",
+       " j/k 스크롤 | Space 페이지 | g/G 처음/끝 | q 돌아가기"),
+"es": (" jk mover | / buscar | Tab proyectos | Esc atrás | Enter cmux reanudar | e terminal | a/u archivar | d borrar | A archivo | J/K scroll | y/Y copiar | o leer | R renombrar | s resumen | r reescanear | q salir",
        "ccs · {n}", "[ARCHIVO]", "[proy: {v}]", "[b: {v}]", "+ detalle", "hora     título",
        "título", "proyecto", "rama", "ID", "primera pregunta", "última respuesta", "(nada)",
        "buscar: ", " filtro: j/k elegir, Enter confirmar, Esc cancelar ", "TODAS",
@@ -204,8 +208,9 @@ _LANG_DATA = {
        "dir no encontrado: {p}, Enter=crear / otra tecla=cancelar ",
        "error al crear: {e}", "fallo de operación: {e}", "ahora", "hace {n}m", "hace {n}h", "hace {n}d",
        "Resumen IA", "generando resumen…", "resumen iniciado: {t}", "resumen listo: {t}", "fallo de resumen: {t}",
-       "renombrar [{t}]: ", "renombrado: {t}"),
-"fr": (" jk déplacer | / rechercher | Tab projets | Esc retour | Enter cmux reprendre | e terminal | a/u archiver | d supprimer | A archives | J/K défilement | y/Y copier | R renommer | s résumé | r rescanner | q quitter",
+       "renombrar [{t}]: ", "renombrado: {t}",
+       " j/k desplazar | Space página | g/G extremos | q volver"),
+"fr": (" jk déplacer | / rechercher | Tab projets | Esc retour | Enter cmux reprendre | e terminal | a/u archiver | d supprimer | A archives | J/K défilement | y/Y copier | o lire | R renommer | s résumé | r rescanner | q quitter",
        "ccs · {n}", "[ARCHIVES]", "[proj: {v}]", "[q: {v}]", "+ détail", "heure     titre",
        "titre", "projet", "branche", "ID", "première question", "dernière réponse", "(aucun)",
        "recherche : ", " filtre : j/k choisir, Enter valider, Esc annuler ", "TOUTES",
@@ -216,8 +221,9 @@ _LANG_DATA = {
        "répertoire introuvable : {p}, Enter=créer / autre touche=annuler ",
        "échec création : {e}", "échec : {e}", "à l'instant", "il y a {n}m", "il y a {n}h", "il y a {n}j",
        "Résumé IA", "résumé en cours…", "résumé lancé : {t}", "résumé terminé : {t}", "échec du résumé : {t}",
-       "renommer [{t}] : ", "renommé : {t}"),
-"de": (" jk bewegen | / suchen | Tab Projekte | Esc zurück | Enter cmux fortsetzen | e Terminal | a/u archivieren | d löschen | A Archiv | J/K scrollen | y/Y kopieren | R umbenennen | s Zusammenfassung | r neu einlesen | q beenden",
+       "renommer [{t}] : ", "renommé : {t}",
+       " j/k défiler | Space page | g/G extrémités | q retour"),
+"de": (" jk bewegen | / suchen | Tab Projekte | Esc zurück | Enter cmux fortsetzen | e Terminal | a/u archivieren | d löschen | A Archiv | J/K scrollen | y/Y kopieren | o lesen | R umbenennen | s Zusammenfassung | r neu einlesen | q beenden",
        "ccs · {n}", "[ARCHIV]", "[proj: {v}]", "[q: {v}]", "+ Detail", "Zeit     Titel",
        "Titel", "Projekt", "Branch", "ID", "erste Frage", "letzte Antwort", "(nichts)",
        "Suche: ", " Filter: j/k wählen, Enter bestätigen, Esc abbrechen ", "ALLE",
@@ -228,8 +234,9 @@ _LANG_DATA = {
        "Verzeichnis fehlt: {p}, Enter=erstellen / andere Taste=abbrechen ",
        "Erstellen fehlgeschlagen: {e}", "Fehler: {e}", "gerade", "vor {n}M", "vor {n}S", "vor {n}T",
        "KI-Zusammenfassung", "Zusammenfassung läuft…", "Zusammenfassung gestartet: {t}", "Zusammenfassung fertig: {t}", "Zusammenfassung fehlgeschlagen: {t}",
-       "umbenennen [{t}]: ", "umbenannt: {t}"),
-"ru": (" jk вниз/вверх | / поиск | Tab проекты | Esc назад | Enter cmux возобновить | e терминал | a/u архив | d удалить | A архив | J/K прокрутка | y/Y копировать | R переим. | s обзор | r пересканировать | q выход",
+       "umbenennen [{t}]: ", "umbenannt: {t}",
+       " j/k scrollen | Space Seite | g/G Enden | q zurück"),
+"ru": (" jk вниз/вверх | / поиск | Tab проекты | Esc назад | Enter cmux возобновить | e терминал | a/u архив | d удалить | A архив | J/K прокрутка | y/Y копировать | o чтение | R переим. | s обзор | r пересканировать | q выход",
        "ccs · {n}", "[АРХИВ]", "[proj: {v}]", "[q: {v}]", "+ детали", "время     заголовок",
        "заголовок", "проект", "ветка", "ID", "первый вопрос", "последний ответ", "(нет)",
        "поиск: ", " фильтр: j/k выбрать, Enter подтвердить, Esc отмена ", "ВСЕ",
@@ -240,8 +247,9 @@ _LANG_DATA = {
        "каталог не найден: {p}, Enter=создать / другая клавиша=отмена ",
        "ошибка создания: {e}", "сбой: {e}", "только что", "{n}м назад", "{n}ч назад", "{n}д назад",
        "ИИ-резюме", "создание резюме…", "резюме запущено: {t}", "резюме готово: {t}", "ошибка резюме: {t}",
-       "переименовать [{t}]: ", "переименовано: {t}"),
-"pt": (" jk mover | / buscar | Tab projetos | Esc voltar | Enter cmux retomar | e terminal | a/u arquivar | d excluir | A arquivo | J/K rolar | y/Y copiar | R renomear | s resumo | r reescanear | q sair",
+       "переименовать [{t}]: ", "переименовано: {t}",
+       " j/k прокрутка | Space страница | g/G края | q назад"),
+"pt": (" jk mover | / buscar | Tab projetos | Esc voltar | Enter cmux retomar | e terminal | a/u arquivar | d excluir | A arquivo | J/K rolar | y/Y copiar | o ler | R renomear | s resumo | r reescanear | q sair",
        "ccs · {n}", "[ARQUIVO]", "[proj: {v}]", "[q: {v}]", "+ detalhes", "hora     título",
        "título", "projeto", "branch", "ID", "primeira pergunta", "última resposta", "(nada)",
        "buscar: ", " filtro: j/k escolher, Enter confirmar, Esc cancelar ", "TODAS",
@@ -252,8 +260,9 @@ _LANG_DATA = {
        "diretório não encontrado: {p}, Enter=criar / outra tecla=cancelar ",
        "falha ao criar: {e}", "falha: {e}", "agora", "há {n}m", "há {n}h", "há {n}d",
        "Resumo IA", "gerando resumo…", "resumo iniciado: {t}", "resumo completo: {t}", "falha no resumo: {t}",
-       "renomear [{t}]: ", "renomeado: {t}"),
-"it": (" jk sposta | / cerca | Tab progetti | Esc indietro | Enter cmux riprendi | e terminale | a/u archivia | d elimina | A archivio | J/K scorri | y/Y copia | R rinomina | s riepilogo | r riscansiona | q esci",
+       "renomear [{t}]: ", "renomeado: {t}",
+       " j/k rolar | Space página | g/G extremos | q voltar"),
+"it": (" jk sposta | / cerca | Tab progetti | Esc indietro | Enter cmux riprendi | e terminale | a/u archivia | d elimina | A archivio | J/K scorri | y/Y copia | o leggere | R rinomina | s riepilogo | r riscansiona | q esci",
        "ccs · {n}", "[ARCHIVIO]", "[proj: {v}]", "[q: {v}]", "+ dettaglio", "ora     titolo",
        "titolo", "progetto", "ramo", "ID", "prima domanda", "ultima risposta", "(nessuno)",
        "cerca: ", " filtro: j/k scegli, Enter conferma, Esc annulla ", "TUTTE",
@@ -264,7 +273,8 @@ _LANG_DATA = {
        "dir inesistente: {p}, Enter=crea / altro tasto=annulla ",
        "creazione fallita: {e}", "errore: {e}", "adesso", "{n}m fa", "{n}h fa", "{n}g fa",
        "Riassunto IA", "generazione riassunto…", "riassunto avviato: {t}", "riassunto pronto: {t}", "riassunto fallito: {t}",
-       "rinominare [{t}]: ", "rinominato: {t}"),
+       "rinominare [{t}]: ", "rinominato: {t}",
+       " j/k scorri | Space pagina | g/G estremità | q indietro"),
 }
 STRINGS = {lang: dict(zip(I18N_KEYS, tup)) for lang, tup in _LANG_DATA.items()}
 _LANG = "zh"
@@ -863,6 +873,10 @@ def main(argv) -> int:
         picker_open = False   # Tab 项目选择弹层
         picker_idx = 0
         searching = False     # 增量搜索：按键即过滤，Esc 清空退出，Enter 确认
+        pager_open = False    # 全屏阅读（方案B）：独占按键，q/Esc 返回列表
+        pgoff = 0             # pager 内容滚动偏移
+        pwin = None           # pager 独立窗口（尺寸变化时重建；覆盖在 stdscr 之上）
+        pwin_wh = (0, 0)      # pwin 当前 (H, W)
         picker_items = []     # [(显示名, cwd|None, 会话数)]
 
         def _open_picker():
@@ -1023,6 +1037,32 @@ def main(argv) -> int:
                         _safe_add(stdscr, yy, xx, txt, sel_attr if selr else at)
                         xx += _dw(txt)
             stdscr.refresh()
+            # 全屏阅读 pager：独立窗口整帧重推（stdscr 差分会丢弃纯垫白行，newwin+touchwin 规避）
+            if pager_open and st.current():
+                curp = st.current()
+                if pwin_wh != (H, W):
+                    pwin = curses.newwin(H, W, 0, 0)
+                    pwin_wh = (H, W)
+                dls = _detail_lines(curp, W - 2, load_summaries())
+                pgoff = max(0, min(pgoff, max(0, len(dls) - (H - 2))))
+                pwin.erase()
+                _safe_add(pwin, 0, 0, " " * (W - 1), curses.A_REVERSE)
+                _safe_add(pwin, 0, 0, _cut(f" {curp.title}  [{pgoff + 1}/{len(dls)}]", W - 1),
+                          curses.A_REVERSE | curses.A_BOLD)
+                for row, segs in enumerate(dls[pgoff:pgoff + H - 2]):
+                    yy = 1 + row
+                    _safe_add(pwin, yy, 0, " " * (W - 1), 0)
+                    xx = 0
+                    for txt, attr in segs:
+                        t2 = _cut(txt, W - 1 - xx)
+                        if not t2:
+                            break
+                        _safe_add(pwin, yy, xx, t2, attr)
+                        xx += _dw(t2)
+                _safe_add(pwin, H - 1, 0, " " * (W - 1), curses.A_REVERSE)   # 底行末格不可写，少垫一格
+                _safe_add(pwin, H - 1, 0, _cut(T("pager_hint"), W - 1), curses.A_REVERSE)
+                pwin.touchwin()
+                pwin.refresh()
             try:
                 k = stdscr.get_wch()                 # 宽字符读取：CJK 整字返回，杜绝字节级乱码
             except curses.error:
@@ -1044,6 +1084,22 @@ def main(argv) -> int:
                     picker_open = False
                 elif k in ("\x1b", "ESC", "q", "Q", "\t"):
                     picker_open = False
+                continue
+            if pager_open:                    # 全屏阅读：独占按键，j/k 滚内容不切会话
+                if k in ("j", "KEY_DOWN"):
+                    pgoff += 1
+                elif k in ("k", "KEY_UP"):
+                    pgoff = max(0, pgoff - 1)
+                elif k in (" ", "KEY_NPAGE"):
+                    pgoff += max(1, H - 2)
+                elif k in ("b", "KEY_PPAGE"):
+                    pgoff = max(0, pgoff - max(1, H - 2))
+                elif k == "g":
+                    pgoff = 0
+                elif k == "G":
+                    pgoff = 10 ** 9
+                elif k in ("q", "Q", "\x1b", "ESC"):
+                    pager_open = False
                 continue
             if searching:                     # 增量搜索：吃掉所有可打印键，q 不再误退出
                 if k in ("\x1b", "ESC"):
@@ -1100,6 +1156,9 @@ def main(argv) -> int:
                 else:
                     msg = (T("sum_started").format(t=cur0.title[:24]) if start_summary(cur0)
                            else T("sum_fail").format(t=cur0.title[:24]))
+            elif k == "o" and st.current():
+                pager_open = True        # 全屏阅读当前会话详情
+                pgoff = 0
             elif k == "R" and st.current():
                 cur0 = st.current()
                 nm = _prompt(stdscr, H - 2, T("rename_p").format(t=cur0.title[:24]))

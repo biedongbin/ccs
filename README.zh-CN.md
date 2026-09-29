@@ -98,6 +98,7 @@ ccs --check    # 非交互：统计会话/项目/归档数与最新标题
 | A | 归档区 ↔ 主列表 |
 | d | 软删除（移入 `~/.ccs/trash/`，见下文） |
 | J / K | 滚动右侧详情 |
+| o | 全屏阅读当前会话详情（j/k 滚动、Space 翻页、g/G 首尾、q 返回列表）——AI 总结较长时看得完整 |
 | y / Y | 复制首条提问 / 最后回复到剪贴板（pbcopy） |
 | R | 重命名会话——等同 Claude Code 内 `/rename`（追加 `custom-title` 记录，官方 picker 同样显示） |
 | s | AI 总结：后台 `claude -p` 分析该会话（核心目标/进度%/分支状态/问题清单），结果存 `~/.ccs/summaries.json` 并显示在详情栏顶部；异步不阻塞——切换会话不打断 |
@@ -168,7 +169,7 @@ ccs --check    # 非交互：统计会话/项目/归档数与最新标题
 ## 测试
 
 ```bash
-python3 test_ccs.py    # assert 式，无框架，37 项检查
+python3 test_ccs.py    # assert 式，无框架，46 项检查
 ```
 
 ## 许可
