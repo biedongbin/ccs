@@ -471,14 +471,22 @@ def do_trash(m: SessionMeta, ccs_home: str) -> str:
     return dest
 
 def do_rename(m: SessionMeta, name: str) -> bool:
-    """等价官方 /rename：向会话 jsonl 追加 custom-title 行（append-only，末条生效）。"""
+    """等价官方 /rename：向会话 jsonl 追加 custom-title 行（append-only，末条生效）。
+    追加后恢复原 mtime：改名不冒充新活动，列表排序/相对时间不动。"""
     line = json.dumps({"type": "custom-title", "customTitle": name,
                        "sessionId": m.sid}, ensure_ascii=False)
     try:
+        st = os.stat(m.path)
         with open(m.path, "a", encoding="utf-8") as f:
             f.write(line + "\n")
+        os.utime(m.path, ns=(st.st_atime_ns, st.st_mtime_ns))
     except OSError:
         return False
+    # mtime 已恢复原值 → 缓存键未变，旧 title 条目会命中，必须按 path 显式驱逐
+    cache = Cache(paths()[1])
+    cache.data = {k: v for k, v in cache.data.items()
+                  if len(k.split("|", 2)) < 2 or k.split("|", 2)[1] != m.path}
+    cache.save()
     return True
 
 def summaries_path() -> str:

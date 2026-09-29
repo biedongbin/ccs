@@ -468,13 +468,19 @@ def test_title_chain_official():
 
 def test_do_rename_roundtrip():
     td, proj, arch = _fake_tree()
-    f = os.path.join(proj, "r.jsonl")
-    write_jsonl(f, [user_line("sid-r", "/w/projA", "旧标题内容")])
-    m = ccs.scan_projects(proj, arch)[0]
-    assert ccs.do_rename(m, "新名字")
-    m2 = ccs.scan_projects(proj, arch)[0]
-    assert m2.title == "新名字"                     # append 后 mtime 变 → 重解析生效
-    assert m2.custom_title == "新名字"
+    os.environ["CCS_HOME"] = os.path.join(td, "ccs")
+    try:
+        f = os.path.join(proj, "r.jsonl")
+        write_jsonl(f, [user_line("sid-r", "/w/projA", "旧标题内容")])
+        m = ccs.scan_projects(proj, arch)[0]
+        mt0 = os.stat(f).st_mtime_ns
+        assert ccs.do_rename(m, "新名字")
+        assert os.stat(f).st_mtime_ns == mt0        # mtime 恢复：改名不冒充新活动
+        m2 = ccs.scan_projects(proj, arch)[0]
+        assert m2.title == "新名字"                  # mtime 未变 → 缓存已按 path 驱逐，重解析生效
+        assert m2.custom_title == "新名字"
+    finally:
+        os.environ.pop("CCS_HOME", None)
 
 def test_resume_cmd_custom():
     m = ccs.SessionMeta(sid="s9", title="t", cwd="/w", size=1)
