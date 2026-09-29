@@ -843,7 +843,7 @@ def _resume(stdscr, st, row, cmd=DEFAULT_RESUME_CMD):
 
 def _prompt(stdscr, y, label) -> str:
     curses.echo()
-    _safe_add(stdscr, y, 0, label)
+    _safe_add(stdscr, y, 0, label + " " * max(0, curses.COLS - _dw(label) - 1))
     stdscr.refresh()
     stdscr.timeout(-1)   # 关超时：getstr 必须阻塞到整行输入，否则半截超时返回空串
     try:
@@ -1198,7 +1198,7 @@ def main(argv) -> int:
                 st.cursor = 0
                 off = 0
             elif k in ("KEY_ENTER", "\n"):
-                r = _resume(stdscr, st, H - 2, cmd=resume_cmd)   # 当前终端 exec 接管，成功不返回
+                r = _resume(stdscr, st, H - 1 - nh, cmd=resume_cmd)   # 提示画在状态行，不压帮助行
                 if r is not None:
                     msg = r
             elif k == "y" and st.current():
@@ -1219,7 +1219,7 @@ def main(argv) -> int:
                 pgoff = 0
             elif k in ("r", "R") and st.current():
                 cur0 = st.current()
-                nm = _prompt(stdscr, H - 2, T("rename_p").format(t=cur0.title[:24]))
+                nm = _prompt(stdscr, H - 1 - nh, T("rename_p").format(t=cur0.title[:24]))
                 if nm:
                     if do_rename(cur0, nm):
                         st = _rebuild(st, scan(), st.archive_view)   # mtime 变 → 缓存自然失效重解析
