@@ -1,0 +1,1154 @@
+#!/usr/bin/env python3
+"""ccs — Claude Code Sessions: 跨目录会话浏览/搜索/归档/一键 cmux 恢复。仅标准库。"""
+import json, locale, os, re, shlex as _shlex, sys
+
+try:
+    locale.setlocale(locale.LC_ALL, "")
+except locale.Error:
+    pass
+from dataclasses import dataclass
+
+INTERNAL_PREFIXES = ("Below is a conversation log", "Caveat: The messages below",
+                      "<local-command", "<command-name>", "<command-message>", "<command-args>",
+                      "This session is being continued")
+
+@dataclass
+class SessionMeta:
+    sid: str; title: str; cwd: str; branch: str = ""
+    mtime: float = 0.0; size: int = 0; path: str = ""
+    first_user: str = ""; last_reply: str = ""; summary: str = ""
+    archived: bool = False
+    entrypoint: str = ""    # sdk-cli = compact/SDK 衍生会话（默认隐藏）
+    custom_title: str = ""  # /rename 写入，官方 picker 最高优先
+    ai_title: str = ""      # 后台小模型生成，次优先
+
+@dataclass
+class Sidecar:
+    leaf: str; summary: str
+
+def text_of(content) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "\n".join(b.get("text", "") for b in content
+                         if isinstance(b, dict) and b.get("type") == "text")
+    return ""
+
+def _is_internal(text: str) -> bool:
+    return any(text.startswith(p) for p in INTERNAL_PREFIXES)
+
+def parse_jsonl(path: str, budget: int = 65536):
+    """读头尾各 budget 字节。返回 SessionMeta / Sidecar / None(读不了)。永不抛错。"""
+    try:
+        st = os.stat(path)
+        with open(path, "rb") as f:
+            head = f.read(budget)
+            f.seek(max(0, st.st_size - budget))
+            tail = f.read()
+    except OSError:
+        return None
+    meta = SessionMeta(sid="", title="", cwd="", mtime=st.st_mtime, size=st.st_size, path=path)
+    first_user = ""; last_reply = ""; saw_content = False
+    def feed(line: bytes):
+        nonlocal first_user, last_reply, saw_content
+        try:
+            o = json.loads(line)
+        except Exception:
+            return
+        if not isinstance(o, dict):
+            return
+        t = o.get("type")
+        if t == "summary":
+            if not meta.summary and o.get("summary"):
+                meta.summary = str(o["summary"])
+            if "leafUuid" in o:
+                return  # 纯 sidecar 由下方终检判定
+        if not meta.sid and o.get("sessionId"):
+            meta.sid = o["sessionId"]
+        if not meta.cwd and o.get("cwd"):
+            meta.cwd = o["cwd"]
+        if not meta.branch and o.get("gitBranch"):
+            meta.branch = o["gitBranch"]
+        if not meta.entrypoint and o.get("entrypoint"):
+            meta.entrypoint = str(o["entrypoint"])
+        if t == "ai-title" and o.get("aiTitle"):
+            meta.ai_title = str(o["aiTitle"])          # append-only：后写覆盖先写
+        if t == "custom-title" and o.get("customTitle"):
+            meta.custom_title = str(o["customTitle"])
+        msg = o.get("message")
+        content = msg.get("content") if isinstance(msg, dict) else None
+        if t == "user" and not o.get("isSidechain"):
+            txt = text_of(content).strip()
+            if txt and not _is_internal(txt):
+                saw_content = True
+                if not first_user:
+                    first_user = txt
+        elif t == "assistant":
+            txt = text_of(content).strip()
+            if txt:
+                saw_content = True
+                last_reply = txt
+    nlines = 0
+    for line in head.splitlines():
+        feed(line); nlines += 1
+    for line in tail.splitlines():
+        feed(line)
+    # 纯 summary sidecar: 只有一行且是 summary（feed 里没消费，直接重查）
+    if nlines <= 1 and b'"type":"summary"' in head.replace(b" ", b""):
+        try:
+            o = json.loads(head.splitlines()[0])
+            if isinstance(o, dict) and o.get("type") == "summary" and not saw_content:
+                return Sidecar(leaf=o.get("leafUuid", ""), summary=str(o.get("summary", "")))
+        except Exception:
+            pass
+    if not first_user:   # 兜底：真实首问在头尾采样窗外（hook 样板挤占头部）→ 流式全扫
+        try:
+            with open(path, "rb") as f:
+                for line in f:
+                    try:
+                        o = json.loads(line)
+                    except Exception:
+                        continue
+                    if not isinstance(o, dict) or o.get("type") != "user" or o.get("isSidechain"):
+                        continue
+                    msg = o.get("message")
+                    content = msg.get("content") if isinstance(msg, dict) else None
+                    txt = text_of(content).strip()
+                    if txt and not _is_internal(txt):
+                        first_user = txt
+                        saw_content = True
+                        break
+        except OSError:
+            pass
+    meta.title = re.sub(r"\s+", " ", (meta.custom_title[:80] or meta.ai_title[:80]
+                        or meta.summary[:80] or first_user[:80]
+                        or os.path.basename(path).removesuffix(".jsonl"))).strip() or "(空会话)"
+    meta.first_user, meta.last_reply = first_user[:500], last_reply[:4000]   # 末答放宽：详情栏主浏览区，500 严重截断
+    enc = os.path.basename(os.path.dirname(path))
+    # 启动目录=编码目录还原，从哪打开归哪；realpath 归一符号链接（/tmp→/private/tmp 类）
+    _cwd0 = launch_dir(enc, meta.cwd) or meta.cwd
+    meta.cwd = os.path.realpath(_cwd0) if _cwd0 else ""
+    return meta
+
+def rel_time(ts: float, now: float) -> str:
+    d = max(0, now - ts)
+    if d < 60: return T("rel_now")
+    if d < 3600: return T("rel_m").format(n=int(d // 60))
+    if d < 86400: return T("rel_h").format(n=int(d // 3600))
+    return T("rel_d").format(n=int(d // 86400))
+
+I18N_KEYS = (  # 有序：STRINGS 按 zip(keys, values) 展开，键序必须与各语言元组一致
+    "help", "title", "badge_arch", "badge_proj", "badge_q", "detail", "hdr_cols",
+    "f_title", "f_project", "f_branch", "f_id", "first_q", "last_a", "none",
+    "search_p", "picker_t", "picker_all", "too_small", "no_sid", "no_cmux",
+    "copied", "no_copy", "no_copy_tool", "gone_input", "gone_conf", "mk_fail",
+    "op_fail", "rel_now", "rel_m", "rel_h", "rel_d",
+    "ai_summary", "sum_run", "sum_started", "sum_done", "sum_fail",
+    "rename_p", "rename_ok")
+
+_LANG_DATA = {
+"zh": (" jk 选择 | / 搜索 | Tab 选项目 | Esc 返回 | Enter cmux恢复 | e 终端恢复 | a/u 归档还原 | d 删 | A 归档区 | J/K 详情滚动 | y/Y 复制首问/末答 | R 改名 | s 总结 | r 重扫 | q 退出",
+       "ccs · {n}", "【归档区】", "[项目: {v}]", "[搜: {v}]", "+ 详情", "时间     标题",
+       "标题", "项目", "分支", "ID", "首条提问", "最后回复", "(无)",
+       "搜索: ", " 项目过滤 j/k选择 回车确认 Esc取消 ", "全部", "终端太小 ({w}x{h}，需 ≥60x12)，q 退出",
+       "该会话无 sessionId，无法恢复", "cmux 不在 PATH，命令: ",
+       "已复制 {n} 字符到剪贴板", "无内容可复制", "无剪贴板工具（pbcopy/clip 均缺失）",
+       "原目录 {p} 不存在，输入恢复目录(回车空=取消): ", "目录不存在: {p}，回车=自动创建 / 其他键=取消 ",
+       "创建失败: {e}", "操作失败: {e}", "刚刚", "{n}分钟前", "{n}小时前", "{n}天前",
+       "AI 总结", "总结生成中…", "总结任务已发起: {t}", "总结完成: {t}", "总结失败: {t}",
+       "重命名 [{t}]: ", "已改名: {t}"),
+"en": (" jk move | / search | Tab projects | Esc back | Enter cmux resume | e terminal resume | a/u archive-restore | d delete | A archive | J/K detail scroll | y/Y copy first/last | R rename | s summary | r rescan | q quit",
+       "ccs · {n}", "[ARCHIVE]", "[proj: {v}]", "[q: {v}]", "+ detail", "time     title",
+       "title", "project", "branch", "ID", "first ask", "last reply", "(none)",
+       "search: ", " filter: j/k select, Enter confirm, Esc cancel ", "ALL",
+       "terminal too small ({w}x{h}, need >=60x12), q to quit",
+       "no sessionId, cannot resume", "cmux not in PATH, command: ",
+       "copied {n} chars", "nothing to copy", "no clipboard tool (pbcopy/clip unavailable)",
+       "original dir {p} gone, type resume dir (empty=cancel): ",
+       "dir not found: {p}, Enter=create / other key=cancel ",
+       "mkdir failed: {e}", "operation failed: {e}", "just now", "{n}m ago", "{n}h ago", "{n}d ago",
+       "AI summary", "summarizing…", "summary started: {t}", "summary done: {t}", "summary failed: {t}",
+       "rename [{t}]: ", "renamed: {t}"),
+"ja": (" jk移動 | /検索 | Tabプロジェクト | Esc戻る | Enter cmux復元 | e端末復元 | a/uアーカイブ | d削除 | Aアーカイブ | J/Kスクロール | y/Yコピー | R改名 | s要約 | r再読込 | q終了",
+       "ccs · {n}", "【アーカイブ】", "[proj: {v}]", "[検: {v}]", "+ 詳細", "時刻     タイトル",
+       "タイトル", "プロジェクト", "ブランチ", "ID", "最初の質問", "最後の返信", "(なし)",
+       "検索: ", " プロジェクト選択 j/k選択 Enter確定 Esc取消 ", "すべて",
+       "端末が小さすぎます ({w}x{h}、≥60x12 必須)、q で終了",
+       "sessionId がなく復元できません", "cmux が PATH にありません、コマンド: ",
+       "{n} 文字をコピーしました", "コピーする内容なし", "クリップボードツールなし (pbcopy/clip なし)",
+       "元ディレクトリ {p} がありません、復元先を入力(空で取消): ",
+       "ディレクトリなし: {p}、Enter=作成 / 他キー=取消 ",
+       "作成失敗: {e}", "操作失敗: {e}", "たった今", "{n}分前", "{n}時間前", "{n}日前",
+       "AI 要約", "要約生成中…", "要約タスク開始: {t}", "要約完了: {t}", "要約失敗: {t}",
+       "名前変更 [{t}]: ", "変更後: {t}"),
+"ko": (" jk 이동 | / 검색 | Tab 프로젝트 | Esc 뒤로 | Enter cmux복원 | e 터미널 복원 | a/u 보관 | d 삭제 | A 보관함 | J/K 스크롤 | y/Y 복사 | R 이름변경 | s 요약 | r 재스캔 | q 종료",
+       "ccs · {n}", "[보관함]", "[proj: {v}]", "[q: {v}]", "+ 상세", "시간     제목",
+       "제목", "프로젝트", "브랜치", "ID", "첫 질문", "마지막 답변", "(없음)",
+       "검색: ", " 프로젝트 필터 j/k선택 Enter확정 Esc취소 ", "전체",
+       "터미널이 너무 작습니다 ({w}x{h}, ≥60x12 필요), q 종료",
+       "sessionId 없음, 복원 불가", "cmux 가 PATH 에 없음, 명령: ",
+       "{n}자 복사됨", "복사할 내용 없음", "클립보드 도구 없음 (pbcopy/clip 부재)",
+       "원래 디렉터리 {p} 없음, 복원할 경로 입력(빈칸=취소): ",
+       "디렉터리 없음: {p}, Enter=생성 / 다른 키=취소 ",
+       "생성 실패: {e}", "작업 실패: {e}", "방금", "{n}분 전", "{n}시간 전", "{n}일 전",
+       "AI 요약", "요약 생성 중…", "요약 시작: {t}", "요약 완료: {t}", "요약 실패: {t}",
+       "이름 변경 [{t}]: ", "변경됨: {t}"),
+"es": (" jk mover | / buscar | Tab proyectos | Esc atrás | Enter cmux reanudar | e terminal | a/u archivar | d borrar | A archivo | J/K scroll | y/Y copiar | R renombrar | s resumen | r reescanear | q salir",
+       "ccs · {n}", "[ARCHIVO]", "[proy: {v}]", "[b: {v}]", "+ detalle", "hora     título",
+       "título", "proyecto", "rama", "ID", "primera pregunta", "última respuesta", "(nada)",
+       "buscar: ", " filtro: j/k elegir, Enter confirmar, Esc cancelar ", "TODAS",
+       "terminal demasiado pequeña ({w}x{h}, ≥60x12), q salir",
+       "sin sessionId, no se puede reanudar", "cmux no está en PATH, comando: ",
+       "{n} caracteres copiados", "nada que copiar", "sin portapapeles (pbcopy/clip no disponibles)",
+       "dir original {p} no existe, escribe dir de reanudación (vacío=cancelar): ",
+       "dir no encontrado: {p}, Enter=crear / otra tecla=cancelar ",
+       "error al crear: {e}", "fallo de operación: {e}", "ahora", "hace {n}m", "hace {n}h", "hace {n}d",
+       "Resumen IA", "generando resumen…", "resumen iniciado: {t}", "resumen listo: {t}", "fallo de resumen: {t}",
+       "renombrar [{t}]: ", "renombrado: {t}"),
+"fr": (" jk déplacer | / rechercher | Tab projets | Esc retour | Enter cmux reprendre | e terminal | a/u archiver | d supprimer | A archives | J/K défilement | y/Y copier | R renommer | s résumé | r rescanner | q quitter",
+       "ccs · {n}", "[ARCHIVES]", "[proj: {v}]", "[q: {v}]", "+ détail", "heure     titre",
+       "titre", "projet", "branche", "ID", "première question", "dernière réponse", "(aucun)",
+       "recherche : ", " filtre : j/k choisir, Enter valider, Esc annuler ", "TOUTES",
+       "terminal trop petit ({w}x{h}, ≥60x12), q quitter",
+       "sessionId absent, reprise impossible", "cmux absent du PATH, commande : ",
+       "{n} caractères copiés", "rien à copier", "pas de presse-papiers (pbcopy/clip indisponibles)",
+       "répertoire d'origine {p} absent, tapez répertoire de reprise (vide=annuler) : ",
+       "répertoire introuvable : {p}, Enter=créer / autre touche=annuler ",
+       "échec création : {e}", "échec : {e}", "à l'instant", "il y a {n}m", "il y a {n}h", "il y a {n}j",
+       "Résumé IA", "résumé en cours…", "résumé lancé : {t}", "résumé terminé : {t}", "échec du résumé : {t}",
+       "renommer [{t}] : ", "renommé : {t}"),
+"de": (" jk bewegen | / suchen | Tab Projekte | Esc zurück | Enter cmux fortsetzen | e Terminal | a/u archivieren | d löschen | A Archiv | J/K scrollen | y/Y kopieren | R umbenennen | s Zusammenfassung | r neu einlesen | q beenden",
+       "ccs · {n}", "[ARCHIV]", "[proj: {v}]", "[q: {v}]", "+ Detail", "Zeit     Titel",
+       "Titel", "Projekt", "Branch", "ID", "erste Frage", "letzte Antwort", "(nichts)",
+       "Suche: ", " Filter: j/k wählen, Enter bestätigen, Esc abbrechen ", "ALLE",
+       "Terminal zu klein ({w}x{h}, ≥60x12), q beenden",
+       "keine sessionId, kein Resume", "cmux nicht im PATH, Befehl: ",
+       "{n} Zeichen kopiert", "nichts zu kopieren", "keine Zwischenablage (pbcopy/clip fehlen)",
+       "Original-Verzeichnis {p} fehlt, Resume-Verzeichnis eingeben (leer=Abbruch): ",
+       "Verzeichnis fehlt: {p}, Enter=erstellen / andere Taste=abbrechen ",
+       "Erstellen fehlgeschlagen: {e}", "Fehler: {e}", "gerade", "vor {n}M", "vor {n}S", "vor {n}T",
+       "KI-Zusammenfassung", "Zusammenfassung läuft…", "Zusammenfassung gestartet: {t}", "Zusammenfassung fertig: {t}", "Zusammenfassung fehlgeschlagen: {t}",
+       "umbenennen [{t}]: ", "umbenannt: {t}"),
+"ru": (" jk вниз/вверх | / поиск | Tab проекты | Esc назад | Enter cmux возобновить | e терминал | a/u архив | d удалить | A архив | J/K прокрутка | y/Y копировать | R переим. | s обзор | r пересканировать | q выход",
+       "ccs · {n}", "[АРХИВ]", "[proj: {v}]", "[q: {v}]", "+ детали", "время     заголовок",
+       "заголовок", "проект", "ветка", "ID", "первый вопрос", "последний ответ", "(нет)",
+       "поиск: ", " фильтр: j/k выбрать, Enter подтвердить, Esc отмена ", "ВСЕ",
+       "терминал слишком мал ({w}x{h}, ≥60x12), q выход",
+       "нет sessionId, возобновление невозможно", "cmux не в PATH, команда: ",
+       "скопировано {n} символов", "нечего копировать", "нет буфера обмена (нет pbcopy/clip)",
+       "исходный каталог {p} отсутствует, введите каталог возобновления (пусто=отмена): ",
+       "каталог не найден: {p}, Enter=создать / другая клавиша=отмена ",
+       "ошибка создания: {e}", "сбой: {e}", "только что", "{n}м назад", "{n}ч назад", "{n}д назад",
+       "ИИ-резюме", "создание резюме…", "резюме запущено: {t}", "резюме готово: {t}", "ошибка резюме: {t}",
+       "переименовать [{t}]: ", "переименовано: {t}"),
+"pt": (" jk mover | / buscar | Tab projetos | Esc voltar | Enter cmux retomar | e terminal | a/u arquivar | d excluir | A arquivo | J/K rolar | y/Y copiar | R renomear | s resumo | r reescanear | q sair",
+       "ccs · {n}", "[ARQUIVO]", "[proj: {v}]", "[q: {v}]", "+ detalhes", "hora     título",
+       "título", "projeto", "branch", "ID", "primeira pergunta", "última resposta", "(nada)",
+       "buscar: ", " filtro: j/k escolher, Enter confirmar, Esc cancelar ", "TODAS",
+       "terminal muito pequeno ({w}x{h}, ≥60x12), q sair",
+       "sem sessionId, não é possível retomar", "cmux fora do PATH, comando: ",
+       "{n} caracteres copiados", "nada para copiar", "sem área de transferência (pbcopy/clip ausentes)",
+       "diretório original {p} ausente, digite diretório (vazio=cancelar): ",
+       "diretório não encontrado: {p}, Enter=criar / outra tecla=cancelar ",
+       "falha ao criar: {e}", "falha: {e}", "agora", "há {n}m", "há {n}h", "há {n}d",
+       "Resumo IA", "gerando resumo…", "resumo iniciado: {t}", "resumo completo: {t}", "falha no resumo: {t}",
+       "renomear [{t}]: ", "renomeado: {t}"),
+"it": (" jk sposta | / cerca | Tab progetti | Esc indietro | Enter cmux riprendi | e terminale | a/u archivia | d elimina | A archivio | J/K scorri | y/Y copia | R rinomina | s riepilogo | r riscansiona | q esci",
+       "ccs · {n}", "[ARCHIVIO]", "[proj: {v}]", "[q: {v}]", "+ dettaglio", "ora     titolo",
+       "titolo", "progetto", "ramo", "ID", "prima domanda", "ultima risposta", "(nessuno)",
+       "cerca: ", " filtro: j/k scegli, Enter conferma, Esc annulla ", "TUTTE",
+       "terminale troppo piccolo ({w}x{h}, ≥60x12), q esci",
+       "senza sessionId, ripresa impossibile", "cmux non in PATH, comando: ",
+       "{n} caratteri copiati", "niente da copiare", "nessuno strumento appunti (pbcopy/clip assenti)",
+       "dir originale {p} assente, digita dir di ripresa (vuoto=annulla): ",
+       "dir inesistente: {p}, Enter=crea / altro tasto=annulla ",
+       "creazione fallita: {e}", "errore: {e}", "adesso", "{n}m fa", "{n}h fa", "{n}g fa",
+       "Riassunto IA", "generazione riassunto…", "riassunto avviato: {t}", "riassunto pronto: {t}", "riassunto fallito: {t}",
+       "rinominare [{t}]: ", "rinominato: {t}"),
+}
+STRINGS = {lang: dict(zip(I18N_KEYS, tup)) for lang, tup in _LANG_DATA.items()}
+_LANG = "zh"
+
+def T(key: str) -> str:
+    return STRINGS.get(_LANG, STRINGS["zh"]).get(key, key)
+
+import glob as _glob, shutil as _shutil, subprocess as _subprocess, time as _time
+
+def paths():
+    projects = os.environ.get("CCS_PROJECTS_DIR",
+                              os.path.expanduser("~/.claude/projects"))
+    home = os.environ.get("CCS_HOME", os.path.expanduser("~/.ccs"))
+    return projects, home
+
+def config_path(home: str = "") -> str:
+    return os.path.join(home or paths()[1], "config.json")
+
+def load_config(home: str = "") -> dict:
+    try:
+        with open(config_path(home), encoding="utf-8") as f:
+            v = json.load(f)
+            return v if isinstance(v, dict) else {}
+    except Exception:
+        return {}
+
+def save_config(cfg: dict, home: str = ""):
+    h = home or paths()[1]
+    os.makedirs(h, exist_ok=True)
+    tmp = os.path.join(h, "config.json.tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, config_path(h))
+
+_CACHE_FIELDS = ("sid", "title", "cwd", "branch", "first_user", "last_reply", "entrypoint")
+CACHE_VERSION = 15   # +1: last_reply 预算 500→4000   # +1: cwd realpath 归一符号链接   # +1: 标题链对齐官方（custom-title > ai-title > summary > 首问）   # +1: title 净化换行（多行 title 折行泄漏到边框外）   # +1: 隐藏 sdk-cli 衍生会话   # +1: 取消一切归组折叠，cwd=启动目录   # +1: 归组锚定 home 下前两级   # +1: 目录编码规则修正（_/./全压-，还原下划线真实路径）   # +1: worktree 启动折回主仓库   # +1: cwd 改为编码目录名反推的真实启动目录   # +1: 首问流式兜底   # 解析语义变更（黑名单等）时 +1，旧缓存条目整体失效
+
+class Cache:
+    def __init__(self, ccs_home: str):
+        os.makedirs(ccs_home, exist_ok=True)
+        self.path = os.path.join(ccs_home, "cache.json")
+        try:
+            with open(self.path, encoding="utf-8") as f:
+                self.data = json.load(f)
+        except Exception:
+            self.data = {}
+
+    def get(self, key):
+        v = self.data.get(key)
+        return v if isinstance(v, dict) else None
+
+    def put(self, s: SessionMeta, mtime_ns: int):
+        self.data[f"v{CACHE_VERSION}|{s.path}|{mtime_ns}"] = {k: getattr(s, k) for k in _CACHE_FIELDS}
+
+    def save(self):
+        tmp = self.path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(self.data, f, ensure_ascii=False)
+        os.replace(tmp, self.path)
+
+def scan_projects(projects_dir, archive_dir, cache=None, refresh=False):
+    if cache is None:
+        cache = Cache(os.path.dirname(archive_dir.rstrip("/")) or ".")
+    entries = []           # (path, archived)
+    for d in dict.fromkeys((projects_dir, archive_dir)):
+        if not os.path.isdir(d):
+            continue
+        for f in sorted(_glob.glob(os.path.join(d, "*.jsonl"))):
+            entries.append((f, d == archive_dir))
+    metas, sidecars = [], []
+    for path, archived in entries:
+        try:
+            st = os.stat(path)
+        except OSError:
+            continue
+        mtime, mtime_ns = st.st_mtime, st.st_mtime_ns
+        key = f"v{CACHE_VERSION}|{path}|{mtime_ns}"
+        hit = None if refresh else cache.get(key)
+        if hit:
+            m = SessionMeta(mtime=mtime, size=st.st_size,
+                            path=path, archived=archived, **hit)
+        else:
+            m = parse_jsonl(path)
+            if isinstance(m, Sidecar):
+                sidecars.append(m); continue
+            if m is None:
+                continue
+            m.archived = archived
+            cache.put(m, mtime_ns)
+        if m.entrypoint == "sdk-cli":
+            continue                                  # compact/SDK 衍生会话：非用户打开，默认隐藏
+        metas.append(m)
+    titles = {sc.leaf: sc.summary for sc in sidecars if sc.leaf}
+    for m in metas:
+        if m.sid in titles and titles[m.sid] and not m.custom_title and not m.ai_title:
+            m.title = re.sub(r"\s+", " ", titles[m.sid][:80]).strip()
+    metas.sort(key=lambda m: m.mtime, reverse=True)
+    return metas
+
+def _project_dirs(projects_dir):
+    if not os.path.isdir(projects_dir):
+        return []
+    return [os.path.join(projects_dir, d) for d in os.listdir(projects_dir)
+            if os.path.isdir(os.path.join(projects_dir, d))]
+
+def _archive_dirs(home):
+    base = os.path.join(home, "archive")
+    if not os.path.isdir(base):
+        return []
+    return [os.path.join(base, d) for d in os.listdir(base)
+            if os.path.isdir(os.path.join(base, d))]
+
+def scan(refresh=False):
+    projects, home = paths()
+    cache = Cache(home)
+    metas = []
+    for d in _project_dirs(projects) + _archive_dirs(home):
+        metas.extend(scan_projects(d, d, cache, refresh))
+    for m in metas:  # archived 统一按路径前缀判定，覆盖 scan_projects 内的判定
+        m.archived = m.path.startswith(os.path.join(home, "archive") + os.sep)
+    metas.sort(key=lambda m: m.mtime, reverse=True)
+    cache.save()
+    return metas
+
+def _enc(p: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]+", "-", p)
+
+def launch_dir(encoded: str, hint: str = "") -> str:
+    """从 ~/.claude/projects 的编码目录名反推真实启动目录。
+
+    编码规则 = 原路径 "/" → "-"。含连字符的真实名靠两级消歧：
+    1) 文件内记录的 cwd（可能被会话中途 cd 污染）的祖先链逐一比对编码；
+    2) 文件系统贪心解码：能新建组件就新建，不能就并入上一段当连字符。
+    """
+    if hint:
+        d = os.path.abspath(hint)
+        while True:
+            if _enc(d) == encoded:
+                return d
+            p = os.path.dirname(d)
+            if p == d:
+                break
+            d = p
+    parts = [p for p in encoded.split("-") if p]
+    if not encoded.startswith("-"):
+        return ""
+    base, cur, parts = os.sep, "", parts
+    while parts:                                   # 最长匹配：优先把后续段连成存在的目录
+        for k in range(len(parts), 0, -1):
+            name = "-".join(parts[:k])
+            if os.path.isdir(os.path.join(base, cur, name)):
+                cur = os.path.join(cur, name) if cur else name
+                parts = parts[k:]
+                break
+        else:                                      # 剩余段全不存在（已删目录等）→ 全按新组件拼
+            cur = os.path.join(cur, "/".join(parts))
+            parts = []
+    return base + cur
+
+def encoded_dir_name(path: str, projects_dir: str) -> str:
+    p = os.path.dirname(path)
+    if p.startswith(projects_dir):
+        rest = p[len(os.path.abspath(projects_dir)):].lstrip(os.sep)
+        return rest.split(os.sep)[0] if rest else os.path.basename(p)
+    return os.path.basename(p)
+
+def archive_dest(m: SessionMeta, ccs_home: str) -> str:
+    projects, _ = paths()
+    return os.path.join(ccs_home, "archive", encoded_dir_name(m.path, projects),
+                        os.path.basename(m.path))
+
+def do_archive(m: SessionMeta, ccs_home: str) -> str:
+    dest = archive_dest(m, ccs_home)
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    _shutil.move(m.path, dest)
+    return dest
+
+def do_restore(m: SessionMeta, projects_dir: str) -> str:
+    encoded = os.path.basename(os.path.dirname(m.path))   # archive/<encoded>/<file>
+    dest = os.path.join(projects_dir, encoded, os.path.basename(m.path))
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    _shutil.move(m.path, dest)
+    return dest
+
+def do_trash(m: SessionMeta, ccs_home: str) -> str:
+    tdir = os.path.join(ccs_home, "trash")
+    os.makedirs(tdir, exist_ok=True)
+    dest = os.path.join(tdir, os.path.basename(m.path))
+    i = 0
+    while os.path.exists(dest):
+        i += 1
+        dest = os.path.join(tdir, f"{os.path.basename(m.path)}.{i}")
+    _shutil.move(m.path, dest)
+    return dest
+
+def do_rename(m: SessionMeta, name: str) -> bool:
+    """等价官方 /rename：向会话 jsonl 追加 custom-title 行（append-only，末条生效）。"""
+    line = json.dumps({"type": "custom-title", "customTitle": name,
+                       "sessionId": m.sid}, ensure_ascii=False)
+    try:
+        with open(m.path, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except OSError:
+        return False
+    return True
+
+def summaries_path() -> str:
+    return os.path.join(paths()[1], "summaries.json")
+
+def load_summaries() -> dict:
+    try:
+        with open(summaries_path(), encoding="utf-8") as f:
+            v = json.load(f)
+            return v if isinstance(v, dict) else {}
+    except Exception:
+        return {}
+
+def save_summaries(sums: dict):
+    tmp = summaries_path() + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(sums, f, ensure_ascii=False)
+    os.replace(tmp, summaries_path())
+
+JOBS = {}   # sid -> {proc, out, title}；随 ccs 退出即弃，孤儿输出由 harvest 兜底
+
+def build_summary_argv(m: SessionMeta) -> list:
+    prompt = (f"请读取并分析这个 Claude Code 会话记录文件：{m.path}（sessionId={m.sid}）。"
+              "输出（中文 Markdown，简洁分节）："
+              "1) 会话/需求的所有核心目标；"
+              "2) 整体任务工作计划与进度百分比；"
+              "3) 当前代码分支状态；"
+              "4) 本会话解决了哪些问题，列出问题清单。")
+    return ["claude", "-p", prompt, "--allowedTools", "Read"]
+
+def start_summary(m: SessionMeta) -> bool:
+    d = os.path.join(paths()[1], "summarize")
+    os.makedirs(d, exist_ok=True)
+    outp = os.path.join(d, f"{m.sid}.out")
+    try:
+        proc = _subprocess.Popen(build_summary_argv(m), stdout=open(outp, "wb"),
+                                 stderr=_subprocess.DEVNULL, cwd=m.cwd or None)
+    except OSError:
+        return False
+    JOBS[m.sid] = {"proc": proc, "out": outp, "title": m.title}
+    return True
+
+def harvest_summaries(max_age: float = 120):
+    """收编孤儿输出：ccs 中途退出后 claude 仍写完 .out；下次启动收编（跳过新近文件防误收）。"""
+    d = os.path.join(paths()[1], "summarize")
+    try:
+        names = os.listdir(d)
+    except OSError:
+        return
+    sums = None
+    for fn in names:
+        if not fn.endswith(".out"):
+            continue
+        p = os.path.join(d, fn)
+        try:
+            if _time.time() - os.stat(p).st_mtime < max_age:
+                continue
+            out = open(p, encoding="utf-8").read().strip()
+        except OSError:
+            continue
+        if out:
+            if sums is None:
+                sums = load_summaries()
+            sums[fn[:-4]] = {"text": out[:20000], "ts": os.stat(p).st_mtime}
+        os.remove(p)
+    if sums is not None:
+        save_summaries(sums)
+
+def cmux_available() -> bool:
+    return _shutil.which("cmux") is not None
+
+DEFAULT_RESUME_CMD = "claude --resume {sid}"
+
+def build_cmux_argv(m: SessionMeta, cwd_exists: bool, fallback_cwd: str,
+                    cmd: str = DEFAULT_RESUME_CMD):
+    cwd = m.cwd if cwd_exists and m.cwd else fallback_cwd
+    return ["cmux", "new-workspace", "--name", m.title[:40].strip() or m.sid[:8],
+            "--cwd", cwd, "--command", cmd.format(sid=m.sid)]
+
+def build_direct_argv(m: SessionMeta, cmd: str = DEFAULT_RESUME_CMD):
+    return _shlex.split(cmd.format(sid=m.sid))
+
+class AppState:
+    def __init__(self, sessions, archive_view=False):
+        self.sessions = sessions
+        self.archive_view = archive_view
+        self.query = ""
+        self.project = None
+        self.cursor = 0
+
+    def visible(self):
+        q = self.query.lower()
+        out = []
+        for m in self.sessions:
+            if m.archived != self.archive_view:
+                continue
+            if self.project and m.cwd != self.project:
+                continue
+            if q and q not in (m.title + m.cwd + m.sid).lower():
+                continue
+            out.append(m)
+        return out
+
+    def projects(self):
+        agg = {}
+        for m in self.sessions:
+            if m.archived != self.archive_view:
+                continue
+            cur = agg.get(m.cwd)
+            if cur is None or m.mtime > cur:
+                agg[m.cwd] = m.mtime
+        return sorted(agg.items(), key=lambda kv: kv[1], reverse=True)
+
+    def move(self, dy):
+        n = len(self.visible())
+        if n:
+            self.cursor = max(0, min(self.cursor + dy, n - 1))
+
+    def current(self):
+        v = self.visible()
+        return v[self.cursor] if 0 <= self.cursor < len(v) else None
+
+def _rebuild(old: "AppState", sessions, archive_view: bool) -> "AppState":
+    """a/u/d 后重扫：保留 query/project 过滤；光标停在原行（下一项自动补位）。"""
+    st2 = AppState(sessions, archive_view)
+    st2.query = old.query
+    st2.project = old.project
+    st2.cursor = min(old.cursor, max(0, len(st2.visible()) - 1))
+    return st2
+
+try:
+    import curses
+except ImportError:            # Windows 标准库无 curses；装 windows-curses 后可跑
+    curses = None
+
+def _safe_add(win, y, x, s, *a):
+    try:
+        win.addstr(y, x, s, *a)
+    except curses.error:
+        pass
+
+import unicodedata as _ud
+
+def _dw(s: str) -> int:
+    """显示宽度：Unicode 官方宽度表。全角(W/F)与歧义宽度(A)按 2 列——
+    CJK 终端把 A 渲染为宽，宁左勿右（多算只会留缝，少算会破框）；
+    组合符号(如 e + U+0301)占 0 列。"""
+    w = 0
+    for ch in s:
+        if _ud.combining(ch):
+            continue
+        w += 2 if _ud.east_asian_width(ch) in ("W", "F", "A") else 1
+    return w
+
+def _cut(s: str, w: int) -> str:
+    """按显示宽度截断。"""
+    out, cw = "", 0
+    for ch in s:
+        c = 2 if ord(ch) > 0x2E80 else 1
+        if cw + c > w:
+            break
+        out += ch
+        cw += c
+    return out
+
+def _pad(s: str, w: int) -> str:
+    """按显示宽度 pad 到 w 列。"""
+    return _cut(s, w) + " " * max(0, w - _dw(s))
+
+def _box(stdscr, top, left, w, h, attr=0):
+    for y, x, ch in ((top, left, curses.ACS_ULCORNER), (top, left + w - 1, curses.ACS_URCORNER),
+                     (top + h - 1, left, curses.ACS_LLCORNER), (top + h - 1, left + w - 1, curses.ACS_LRCORNER)):
+        try:
+            stdscr.addch(y, x, ch, attr)
+        except curses.error:
+            pass
+    for y, x, ch, n in ((top, left + 1, curses.ACS_HLINE, w - 2), (top + h - 1, left + 1, curses.ACS_HLINE, w - 2)):
+        try:
+            stdscr.hline(y, x, ch, n, attr)
+        except curses.error:
+            pass
+    for y, x, ch, n in ((top + 1, left, curses.ACS_VLINE, h - 2), (top + 1, left + w - 1, curses.ACS_VLINE, h - 2)):
+        try:
+            stdscr.vline(y, x, ch, n, attr)
+        except curses.error:
+            pass
+
+def _hard_wrap(t: str, w: int):
+    """CJK 硬折行：中文按 2 列宽计，避免 textwrap 对无空格中文失效。"""
+    out, cur, cw = [], "", 0
+    for ch in t:
+        if ch == "\n":
+            out.append(cur); cur, cw = "", 0
+            continue
+        c = 2 if ord(ch) > 0x2E80 else 1
+        if cw + c > w:
+            out.append(cur); cur, cw = ch, c
+        else:
+            cur += ch; cw += c
+    if cur:
+        out.append(cur)
+    return out or [""]
+
+def run_check() -> int:
+    metas = scan()
+    projects = len({m.cwd for m in metas})
+    print(f"会话 {len(metas)} · 项目 {projects} · 归档 {sum(m.archived for m in metas)}")
+    now = _time.time()
+    for m in metas[:5]:
+        print(f"  {rel_time(m.mtime, now):>6} [{os.path.basename(os.path.dirname(m.path))[:24]:24}] {m.title[:60]}")
+    return 0
+
+def _detail_lines(m, width, sums=None):
+    """详情行 = 段列表 [(文本, attr), ...]，按段着色依次绘制。"""
+    tilde = os.path.expanduser("~")
+    try:
+        lab = curses.color_pair(1) | curses.A_BOLD      # 字段名: 青色加粗
+        val = curses.A_BOLD
+        dim = curses.A_DIM
+    except curses.error:
+        lab = val = dim = curses.A_BOLD
+    bar = [[("-" * max(4, width), dim)]]      # 分割线是"一行"，行内一个段
+    lines = [
+        [(_pad(T("f_title"), 5), lab), (m.title, val)],
+        [(_pad(T("f_project"), 5), lab), (m.cwd.replace(tilde, "~"), 0)],
+        [(_pad(T("f_branch"), 5), lab), (m.branch or "-", 0), (f"   {m.size // 1024} KB", dim)],
+        [(_pad(T("f_id"), 5), lab), (m.sid, dim)],
+    ]
+    if sums is not None:
+        s = sums.get(m.sid)
+        if s and s.get("text"):
+            lines += bar + [[(T("ai_summary"), lab)]] \
+                + [[(t, 0)] for t in _hard_wrap(s["text"], width)]
+        elif m.sid in JOBS:
+            lines += bar + [[(T("ai_summary"), lab)]] + [[(T("sum_run"), dim)]]
+    lines += bar + [[(T("first_q"), lab)]] \
+        + [[(t, 0)] for t in _hard_wrap(m.first_user or T("none"), width)] \
+        + bar + [[(T("last_a"), lab)]] \
+        + [[(t, 0)] for t in _hard_wrap(m.last_reply or T("none"), width)]
+    return lines
+
+def _copy_backend():
+    """剪贴板后端探测：pbcopy(macOS) → clip(Windows)。返回 (argv, encoding) 或 (None, None)。"""
+    if _shutil.which("pbcopy"):
+        return ["pbcopy"], "utf-8"
+    if _shutil.which("clip"):        # ponytail: clip.exe 走 UTF-16 带 BOM，未在 Windows 实测
+        return ["clip"], "utf-16"
+    return None, None
+
+def _copy(text: str) -> str:
+    if not text:
+        return T("no_copy")
+    argv, enc = _copy_backend()
+    if not argv:
+        return T("no_copy_tool")
+    _subprocess.run(argv, input=text.encode(enc), check=False)
+    return T("copied").format(n=len(text))
+
+def _clamp_off(cursor: int, off: int, n: int, cap: int) -> int:
+    """滚动窗口跟随光标。cap = 实际可绘内容行数。"""
+    off = max(0, min(off, max(0, n - cap)))
+    if cursor < off:
+        off = cursor
+    if cursor >= off + cap:
+        off = cursor - cap + 1
+    return off
+
+def _resume(stdscr, st, row, direct=False, cmd=DEFAULT_RESUME_CMD):
+    m = st.current()
+    if not m or not m.sid:
+        return T("no_sid")
+    cwd_ok = bool(m.cwd) and os.path.isdir(m.cwd)
+    eff = m.cwd
+    if not cwd_ok:
+        ans = _prompt(stdscr, row, T("gone_input").format(p=m.cwd or "-"))
+        if not ans:
+            return None
+        eff = os.path.expanduser(ans)
+        if not os.path.isdir(eff):
+            _safe_add(stdscr, row, 0, T("gone_conf").format(p=eff))
+            stdscr.refresh()
+            try:
+                if stdscr.getkey() not in ("\n", "KEY_ENTER"):
+                    return None
+            except curses.error:
+                return None
+            try:
+                os.makedirs(eff, exist_ok=True)
+            except OSError as e:
+                return T("mk_fail").format(e=e)
+    argv = build_cmux_argv(m, cwd_exists=cwd_ok, fallback_cwd=eff, cmd=cmd)
+    if not direct and not cmux_available():
+        return T("no_cmux") + " ".join(argv)
+    curses.endwin()
+    if direct:
+        dargv = build_direct_argv(m, cmd=cmd)
+        if eff != os.getcwd():
+            os.chdir(eff)                                # 终端直恢复也要落回原工程
+        os.execvp(dargv[0], dargv)                       # 当前终端接管，不返回
+    _subprocess.run(argv)
+    return "OPENED"                                  # 调用方收到后退出 TUI（endwin 后循环不可继续)
+
+def _prompt(stdscr, y, label) -> str:
+    curses.echo()
+    _safe_add(stdscr, y, 0, label)
+    stdscr.refresh()
+    stdscr.timeout(-1)   # 关超时：getstr 必须阻塞到整行输入，否则半截超时返回空串
+    try:
+        buf = stdscr.getstr(y, _dw(label), 200)
+    finally:
+        stdscr.timeout(500)
+    curses.noecho()
+    return buf.decode("utf-8", "replace").strip()
+
+LANG_NAMES = [("zh", "中文"), ("en", "English"), ("ja", "日本語"), ("ko", "한국어"),
+              ("es", "Español"), ("fr", "Français"), ("de", "Deutsch"), ("ru", "Русский"),
+              ("pt", "Português"), ("it", "Italiano")]
+THEME_NAMES = ["default", "ocean", "dracula", "mono"]
+
+_COLOR_NAMES = {"black": 0, "red": 1, "green": 2, "yellow": 3,
+                "blue": 4, "magenta": 5, "cyan": 6, "white": 7}
+
+def _user_themes(cfg: dict) -> dict:
+    """config.json "custom": {名字: [强调色, 消息色]} → {名字: (accent, msg)}。
+    颜色取 8 色名或 0-255 整数；非法条目静默忽略。"""
+    out = {}
+    for name, v in (cfg.get("custom") or {}).items():
+        pair = []
+        if isinstance(v, list) and len(v) == 2:
+            for c in v:
+                if isinstance(c, str) and c in _COLOR_NAMES:
+                    pair.append(_COLOR_NAMES[c])
+                elif isinstance(c, int) and not isinstance(c, bool) and 0 <= c <= 255:
+                    pair.append(c)
+        if len(pair) == 2:
+            out[name] = (pair[0], pair[1])
+    return out
+
+def run_config(first_run: bool = False) -> None:
+    """引导配置语言+主题，写入 ~/.ccs/config.json。选语言前无既定语言，故提示用双语。"""
+    cfg = load_config() if not first_run else {}
+    print("== ccs 首次配置 / first-run setup ==" if first_run else "== ccs 配置 / config ==")
+    for i, (code, name) in enumerate(LANG_NAMES, 1):
+        mark = "*" if cfg.get("lang", "zh") == code else " "
+        print(f"  {i:>2}){mark} {name} ({code})")
+    raw = input(f"Language [1-{len(LANG_NAMES)}, Enter=keep]: ").strip()
+    if raw.isdigit() and 1 <= int(raw) <= len(LANG_NAMES):
+        cfg["lang"] = LANG_NAMES[int(raw) - 1][0]
+    global _LANG
+    _LANG = cfg.get("lang", "zh")
+    themes = THEME_NAMES + [n for n in _user_themes(cfg) if n not in THEME_NAMES]
+    for i, name in enumerate(themes, 1):
+        mark = "*" if cfg.get("theme", "default") == name else " "
+        print(f"  {i}){mark} {name}")
+    raw = input(f"Theme [1-{len(themes)}, Enter=keep]: ").strip()
+    if raw.isdigit() and 1 <= int(raw) <= len(themes):
+        cfg["theme"] = themes[int(raw) - 1]
+    save_config(cfg)
+    print(f"saved -> {config_path()}")
+
+def main(argv) -> int:
+    if "--check" in argv:
+        return run_check()
+    if "--config" in argv:
+        run_config()
+        return 0
+    import argparse
+    p = argparse.ArgumentParser(prog="ccs", description="Claude Code 会话管理器")
+    p.add_argument("-a", "--archive", action="store_true", help="进入归档区视图")
+    p.add_argument("-r", "--refresh", action="store_true", help="忽略缓存全量重扫")
+    p.add_argument("--config", action="store_true", help="配置语言/主题")
+    args = p.parse_args(argv)
+    cfg = load_config()
+    global _LANG
+    _LANG = cfg.get("lang", "zh")
+    if not os.path.exists(config_path()):
+        run_config(first_run=True)   # 首次启动：引导配置主题+语言
+        cfg = load_config()
+        _LANG = cfg.get("lang", "zh")
+    resume_cmd = cfg.get("resume_cmd", DEFAULT_RESUME_CMD)
+    st = AppState(scan(refresh=args.refresh), archive_view=args.archive)
+    harvest_summaries()
+    st.project = os.path.realpath(os.getcwd())   # 无条件锚定当前目录（realpath 归一）：无会话则空列表；Esc 查看全部
+    projects_dir, home = paths()
+
+    def curses_main(stdscr):
+        nonlocal st
+        msg = ""
+        off = 0          # 左栏列表滚动偏移
+        dscroll = 0      # 右栏详情滚动偏移
+        last_sid = None
+        picker_open = False   # Tab 项目选择弹层
+        picker_idx = 0
+        searching = False     # 增量搜索：按键即过滤，Esc 清空退出，Enter 确认
+        picker_items = []     # [(显示名, cwd|None, 会话数)]
+
+        def _open_picker():
+            nonlocal picker_items, picker_idx, picker_open
+            agg = {}   # cwd -> [count, latest_mtime]
+            for m in st.sessions:
+                if m.archived == st.archive_view:
+                    c0, t0 = agg.get(m.cwd, (0, 0.0))
+                    agg[m.cwd] = (c0 + 1, max(t0, m.mtime))
+            rows = sorted(agg.items(), key=lambda kv: kv[1][1], reverse=True)
+            total = sum(c for c, _t in agg.values())
+            newest = max((t for _c, t in agg.values()), default=0.0)
+            picker_items = [(T("picker_all"), None, total, newest)] + [
+                (os.path.basename(c) or c, c, n, t) for c, (n, t) in rows]
+            cl = [c for _n, c, _i, _t in picker_items]
+            picker_idx = cl.index(st.project) if st.project in cl else 0
+            picker_open = True
+        curses.curs_set(0)
+        stdscr.timeout(500)          # 半秒键超时：阻塞等待中也能轮询总结任务
+        PALETTES = {
+            "default": (curses.COLOR_CYAN, curses.COLOR_YELLOW),
+            "ocean":   (curses.COLOR_BLUE, curses.COLOR_GREEN),
+            "dracula": (curses.COLOR_MAGENTA, curses.COLOR_GREEN),
+        }
+        PALETTES.update(_user_themes(cfg))
+        pal = PALETTES.get(cfg.get("theme", "default"), PALETTES["default"])
+        border_attr, sel_attr, time_attr, msg_attr = curses.A_DIM, curses.A_REVERSE, curses.A_DIM, curses.A_BOLD
+        if curses.has_colors() and pal:
+            try:
+                curses.start_color()
+                curses.use_default_colors()
+                curses.init_pair(1, pal[0], -1)
+                curses.init_pair(2, pal[1], -1)
+                curses.init_pair(3, curses.COLOR_BLACK, pal[0])
+                border_attr = curses.color_pair(1) | curses.A_DIM
+                sel_attr = curses.color_pair(3) | curses.A_BOLD
+                time_attr = curses.color_pair(1)
+                msg_attr = curses.color_pair(2)
+            except curses.error:
+                pass
+        while True:
+            for sid in [s0 for s0, jb in JOBS.items() if jb["proc"].poll() is not None]:
+                jb = JOBS.pop(sid)
+                try:
+                    out = open(jb["out"], encoding="utf-8").read().strip()
+                except OSError:
+                    out = ""
+                if jb["proc"].returncode == 0 and out:
+                    sums0 = load_summaries()
+                    sums0[sid] = {"text": out[:20000], "ts": _time.time()}
+                    save_summaries(sums0)
+                    msg = T("sum_done").format(t=jb["title"][:24])
+                else:
+                    msg = T("sum_fail").format(t=jb["title"][:24])
+            stdscr.erase()
+            H, W = stdscr.getmaxyx()
+            if H < 12 or W < 60:
+                _safe_add(stdscr, 0, 0, T("too_small").format(w=W, h=H))
+                stdscr.refresh()
+                try:
+                    k = stdscr.getkey()
+                except curses.error:
+                    continue
+                if k in ("q", "Q"):
+                    return
+                continue
+            help_ls = _hard_wrap(T("help"), W - 1)     # 帮助行按宽自动折行（多行时整体上移让位）
+            nh = len(help_ls)
+            TOP, BOT = 1, H - 2 - nh                   # 分栏边框上下行
+            LW = min(60, max(34, W // 2))              # 左栏固定 60 列（时间7+空1+标题50+边框2），窄终端才收缩
+            RW = W - LW                                # 右栏 = 其余全部
+            it, ib = TOP + 1, BOT - 1                  # 内容行范围
+            list_h = ib - it + 1
+            vis_h = list_h - 1                     # 左栏表头占 it 行，实际可绘行数少一行
+            rows = st.visible()
+            n = len(rows)
+            off = _clamp_off(st.cursor, off, n, vis_h)
+            # 标题栏
+            badges = ((T("badge_arch") if st.archive_view else "")
+                      + (T("badge_proj").format(v=os.path.basename(st.project) or st.project) if st.project else "")
+                      + (T("badge_q").format(v=st.query) if st.query else ""))
+            _safe_add(stdscr, 0, 0, " " * (W - 1), curses.A_REVERSE)
+            _safe_add(stdscr, 0, 1, " " + T("title").format(n=n) + (f" {badges}" if badges else ""),
+                      curses.A_REVERSE | curses.A_BOLD)
+            _safe_add(stdscr, 0, max(1, W - 10), f"{st.cursor + 1 if n else 0}/{n} ", curses.A_REVERSE)
+            # 左右栏内容（框后画，框线永远完整）
+            # 左栏：表头 + 会话列表
+            lw = LW - 2
+            _safe_add(stdscr, it, 1, T("hdr_cols"), curses.A_DIM)
+            now = _time.time()
+            for j, m in enumerate(rows[off:off + vis_h]):
+                y = it + 1 + j
+                t = rel_time(m.mtime, now)
+                if off + j == st.cursor:
+                    _safe_add(stdscr, y, 1, " " * lw, sel_attr)
+                    _safe_add(stdscr, y, 1, _pad(t, 7) + " " + _cut(m.title, lw - 9), sel_attr)
+                else:
+                    _safe_add(stdscr, y, 1, _pad(t, 7), time_attr)
+                    _safe_add(stdscr, y, 9, _cut(m.title, lw - 8))
+            if n > vis_h:                             # 左栏滚动指示
+                pos = it + 1 + round(off / max(1, n - vis_h) * (vis_h - 1))
+                _safe_add(stdscr, min(pos, ib), LW - 1, "|", sel_attr)
+            # 右栏：选中会话详情
+            cur = st.current()
+            if cur:
+                if cur.sid != last_sid:
+                    dscroll = 0
+                    last_sid = cur.sid
+                rw = RW - 2
+                dlines = _detail_lines(cur, rw, load_summaries())
+                dscroll = max(0, min(dscroll, max(0, len(dlines) - list_h)))
+                for j, segs in enumerate(dlines[dscroll:dscroll + list_h]):
+                    x = LW + 1
+                    for txt, attr in segs:
+                        t2 = _cut(txt, LW + 1 + rw - x)
+                        if not t2:
+                            break
+                        _safe_add(stdscr, it + j, x, t2, attr)
+                        x += _dw(t2)
+                if len(dlines) > list_h:
+                    pos = it + round(dscroll / max(1, len(dlines) - list_h) * (list_h - 1))
+                    _safe_add(stdscr, min(pos, ib), W - 1, "|", sel_attr)
+            # 边框最后画——任何宽度误判的内容都被框线压住，永不破框
+            _box(stdscr, TOP, 0, LW, BOT - TOP + 1, border_attr)
+            _box(stdscr, TOP, LW, RW, BOT - TOP + 1, border_attr)
+            _safe_add(stdscr, TOP, LW + 2, T("detail"), border_attr)
+            # 状态行 + 帮助行
+            _safe_add(stdscr, H - 1 - nh, 0, ((T("search_p") + st.query + "▌") if searching else msg)[:W - 1], msg_attr)
+            for hi, hl in enumerate(help_ls):
+                _safe_add(stdscr, H - nh + hi, 0, hl[:W - 1], curses.A_DIM)
+            # Tab 项目选择弹层（最上层）
+            if picker_open and picker_items:
+                pw = min(W - 6, 96)
+                ph = min(len(picker_items) + 2, H - 4)
+                px = (W - pw) // 2
+                py = 1
+                _box(stdscr, py, px, pw, ph, sel_attr)
+                _safe_add(stdscr, py, px + 2, T("picker_t"), sel_attr)
+                vis = ph - 2
+                poff = max(0, min(picker_idx - vis + 1, max(0, len(picker_items) - vis)))
+                name_w, cnt_w, time_w = 24, 5, 11
+                path_w = pw - 2 - name_w - cnt_w - time_w - 2
+                for j, (name, pcwd, cnt, mt) in enumerate(picker_items[poff:poff + vis]):
+                    yy = py + 1 + j
+                    selr = poff + j == picker_idx
+                    if selr:
+                        _safe_add(stdscr, yy, px + 1, " " * (pw - 2), sel_attr)
+                    mark = "*" if pcwd == st.project else " "
+                    p = (pcwd or "").replace(os.path.expanduser("~"), "~")
+                    if _dw(p) > path_w:
+                        p = ".." + p[2 - path_w:] if path_w > 2 else ""
+                    parts = [(_pad(_cut(f"{mark} {name}", name_w), name_w), 0),
+                             (_pad(_cut(p, path_w), path_w), curses.A_DIM),
+                             (f"{cnt:>{cnt_w}} ", 0),
+                             (_pad(rel_time(mt, now), time_w), curses.A_DIM)]
+                    xx = px + 1
+                    for txt, at in parts:
+                        _safe_add(stdscr, yy, xx, txt, sel_attr if selr else at)
+                        xx += _dw(txt)
+            stdscr.refresh()
+            try:
+                k = stdscr.get_wch()                 # 宽字符读取：CJK 整字返回，杜绝字节级乱码
+            except curses.error:
+                continue
+            if isinstance(k, int):                   # 功能键 → "KEY_xxx" 名，兼容既有分支
+                k = curses.keyname(k).decode()
+            if k not in ("KEY_UP", "KEY_DOWN", "j", "k", "g", "G", "J", "K",
+                         "KEY_MOUSE", "KEY_PPAGE", "KEY_NPAGE", "s"):
+                msg = ""                      # 移动/滚动键保留状态行，其余键先清空再处理
+            if picker_open:                   # 弹层模式：独占按键
+                if k in ("j", "KEY_DOWN"):
+                    picker_idx = min(picker_idx + 1, len(picker_items) - 1)
+                elif k in ("k", "KEY_UP"):
+                    picker_idx = max(picker_idx - 1, 0)
+                elif k in ("\n", "KEY_ENTER"):
+                    st.project = picker_items[picker_idx][1]
+                    st.cursor = 0
+                    off = 0
+                    picker_open = False
+                elif k in ("\x1b", "ESC", "q", "Q", "\t"):
+                    picker_open = False
+                continue
+            if searching:                     # 增量搜索：吃掉所有可打印键，q 不再误退出
+                if k in ("\x1b", "ESC"):
+                    searching = False
+                    st.query = ""
+                    st.cursor = 0
+                    off = 0
+                elif k in ("\n", "KEY_ENTER"):
+                    searching = False
+                elif k in ("\x7f", "\b", "KEY_BACKSPACE"):
+                    st.query = st.query[:-1]
+                    st.cursor = 0
+                    off = 0
+                elif len(k) == 1 and ord(k) >= 32:
+                    st.query += k
+                    st.cursor = 0
+                    off = 0
+                continue
+            if k in ("q", "Q"):
+                return
+            elif k in ("KEY_UP", "k"): st.move(-1)
+            elif k in ("KEY_DOWN", "j"): st.move(1)
+            elif k == "g": st.cursor = 0
+            elif k == "G" and n: st.cursor = n - 1
+            elif k == "KEY_PPAGE": dscroll -= list_h
+            elif k == "KEY_NPAGE": dscroll += list_h
+            elif k == "K": dscroll -= 1
+            elif k == "J": dscroll += 1
+            elif k == "/":
+                searching = True
+                st.query = ""
+                st.cursor = 0
+                off = 0
+            elif k in ("KEY_ENTER", "\n"):
+                r = _resume(stdscr, st, H - 2, cmd=resume_cmd)
+                if r == "OPENED":
+                    return                           # cmux 已开，退出 TUI
+                if r is not None:
+                    msg = r                          # cmux 降级命令 / 无 sessionId 提示
+            elif k == "e":
+                r = _resume(stdscr, st, H - 2, direct=True, cmd=resume_cmd)   # execvp 成功则不返回
+                if r is not None:
+                    msg = r
+            elif k == "y" and st.current():
+                msg = _copy(st.current().first_user)          # 复制首条提问
+            elif k == "Y" and st.current():
+                msg = _copy(st.current().last_reply)          # 复制最后回复
+            elif k == "s" and st.current():
+                cur0 = st.current()
+                if not cur0.sid:
+                    msg = T("no_sid")
+                elif cur0.sid in JOBS:
+                    msg = T("sum_run")
+                else:
+                    msg = (T("sum_started").format(t=cur0.title[:24]) if start_summary(cur0)
+                           else T("sum_fail").format(t=cur0.title[:24]))
+            elif k == "R" and st.current():
+                cur0 = st.current()
+                nm = _prompt(stdscr, H - 2, T("rename_p").format(t=cur0.title[:24]))
+                if nm:
+                    if do_rename(cur0, nm):
+                        st = _rebuild(st, scan(), st.archive_view)   # mtime 变 → 缓存自然失效重解析
+                        msg = T("rename_ok").format(t=nm[:24])
+                    else:
+                        msg = T("op_fail").format(e="write")
+            elif k == "a" and st.current() and not st.archive_view:
+                try:
+                    do_archive(st.current(), home)
+                    st = _rebuild(st, scan(), False)
+                except OSError as e:
+                    msg = T("op_fail").format(e=e)
+            elif k == "u" and st.current() and st.archive_view:
+                try:
+                    do_restore(st.current(), projects_dir)
+                    st = _rebuild(st, scan(), True)
+                except OSError as e:
+                    msg = T("op_fail").format(e=e)
+            elif k == "d" and st.current():
+                try:
+                    do_trash(st.current(), home)
+                    st = _rebuild(st, scan(), st.archive_view)
+                except OSError as e:
+                    msg = T("op_fail").format(e=e)
+            elif k in ("\x1b", "ESC"):                # Esc 逐级退出：清搜索/过滤 → 退出归档区
+                st.query, st.project = "", None
+                st.archive_view = False
+                st.cursor = 0
+                off = 0
+            elif k == "A":
+                st = AppState(st.sessions, archive_view=not st.archive_view)
+                st.query, st.project = "", None
+            elif k == "r":
+                st = AppState(scan(refresh=True), archive_view=st.archive_view)
+            elif k == "\t":                            # Tab: 打开项目选择弹层
+                _open_picker()
+    try:
+        if curses is None:   # Windows 未装 windows-curses
+            print("缺少 curses 组件 / curses missing:  pip install windows-curses")
+            return 1
+        curses.wrapper(curses_main)
+        print("\x1b[2J\x1b[H", end="")   # 清残帧：q 退出后 shell/官方 picker 不与 ccs 遗留画面叠加
+    except curses.error as e:
+        print(f"终端初始化失败: {e}（ccs 需在真实终端运行）", file=sys.stderr)
+        return 1
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
