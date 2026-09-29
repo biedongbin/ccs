@@ -194,19 +194,6 @@ def test_trash_no_rm_and_collision():
     assert os.path.exists(os.path.join(home, "trash", "dup.jsonl.1"))  # 重名不覆盖
 
 # ---- Task 4 tests ----
-def test_build_cmux_argv_normal():
-    m = ccs.SessionMeta(sid="sid-1", title="修复登录bug" * 20, cwd="/w/proj")
-    argv = ccs.build_cmux_argv(m, cwd_exists=True, fallback_cwd="/tmp")
-    assert argv[:3] == ["cmux", "new-workspace", "--name"]
-    assert len(argv[3]) <= 40                       # 标题截断
-    assert argv[argv.index("--cwd") + 1] == "/w/proj"
-    assert argv[argv.index("--command") + 1] == "claude --resume sid-1"
-
-def test_build_cmux_argv_missing_cwd_fallback():
-    m = ccs.SessionMeta(sid="sid-2", title="t", cwd="/gone")
-    argv = ccs.build_cmux_argv(m, cwd_exists=False, fallback_cwd="/nowhere")
-    assert argv[argv.index("--cwd") + 1] == "/nowhere"
-
 def test_build_direct_argv():
     m = ccs.SessionMeta(sid="sid-3", title="t", cwd="/w")
     assert ccs.build_direct_argv(m) == ["claude", "--resume", "sid-3"]
@@ -486,8 +473,8 @@ def test_resume_cmd_custom():
     m = ccs.SessionMeta(sid="s9", title="t", cwd="/w", size=1)
     a = ccs.build_direct_argv(m, cmd="claude --dangerously-skip-permissions --resume {sid}")
     assert a == ["claude", "--dangerously-skip-permissions", "--resume", "s9"]
-    c = ccs.build_cmux_argv(m, cwd_exists=True, fallback_cwd="/w", cmd="claude -p {sid}")
-    assert c[-1] == "claude -p s9"
+    b = ccs.build_direct_argv(m, cmd="claude -p {sid}")
+    assert b == ["claude", "-p", "s9"]
 
 def test_last_reply_budget():
     """末答预算 500→4000：长回复不再截断成半句。"""
@@ -500,6 +487,26 @@ def test_last_reply_budget():
     m = ccs.scan_projects(proj, arch)[0]
     assert len(m.last_reply) == 4000
     assert m.last_reply.endswith("的回复") or len(m.last_reply) > 500
+
+def test_md_lines():
+    """markdown 轻渲染：表格对齐/标题映射/围栏/粗体剥离/超宽折行。"""
+    md = "## 标题x\n| a | bb |\n|---|---|\n| c | d |\n```python\nprint(1)\n```\n**加粗** b\n"
+    ls = ccs._md_lines(md, 40)
+    assert ls[0] == "▪ 标题x"
+    assert "a  bb" in ls[0 + 1] and "c  d" in "".join(ls)   # 列对齐（a 后垫空格对齐 bb）
+    assert not any("---" in l for l in ls)                    # 对齐行剔除
+    assert not any("```" in l for l in ls)                    # 围栏行消失
+    assert any(l.strip() == "print(1)" for l in ls)           # 代码行保留（缩进）
+    assert any(l == "加粗 b" for l in ls)                     # ** 剥离
+    wide = ccs._md_lines("超" * 60, 40)
+    assert all(ccs._dw(l) <= 40 for l in wide) and len(wide) == 3   # 120 列 ÷ 40 = 3 行
+
+def test_hard_wrap_segments():
+    """帮助行按 '|' 段折行：同一键的说明不拆成两行。"""
+    ls = ccs._hard_wrap(" jk 选择 | / 搜索 | Enter 恢复 | q 退出", 20)
+    assert len(ls) >= 2
+    assert any("Enter 恢复" in l for l in ls)                 # 段完整
+    assert not any(l.strip() in ("删", "出", "复", "原") for l in ls)   # 无被腰斩的单字段残行
 
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]

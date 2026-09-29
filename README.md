@@ -29,7 +29,7 @@ curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
 ccs
 ```
 
-That's it. Pick a session, hit `Enter`, and it reopens in a new [cmux](https://github.com/cmux/cmux) workspace at its original directory.
+That's it. Pick a session, hit `Enter`, and your terminal is taken over in place — back in the session's original directory.
 
 ## What you get — at a glance
 
@@ -72,7 +72,6 @@ Windows specifics:
 
 - **Terminal**: use Windows Terminal. The legacy console (conhost) mangles CJK width and breaks the two-pane layout.
 - **Clipboard**: `y` / `Y` use `clip.exe` (pbcopy is macOS-only); with neither present, ccs says so and continues.
-- **cmux**: not available on Windows — `Enter` prints the full resume command instead of opening a workspace.
 - **Stability note**: core logic (parsing, cache, archive) is plain Python and covered by tests, but the curses rendering path is developed and verified on macOS/Linux; treat Windows as best-effort.
 
 ## Usage
@@ -92,8 +91,7 @@ First launch with no `~/.ccs/config.json` runs a guided setup for language and t
 | ↑/↓ or j/k | move |
 | `/` | search (title / project / session ID, case-insensitive) |
 | Tab | project filter picker (Enter confirm, Esc cancel) |
-| Enter | resume in a new cmux workspace at the original directory |
-| e | resume in the current terminal (`claude --resume <id>`, exec) |
+| Enter | resume in place: chdir to the session's original directory and exec (template configurable via `resume_cmd`) |
 | a / u | archive / restore |
 | A | archive view ↔ main list |
 | d | soft-delete (moved to `~/.ccs/trash/`, see below) |
@@ -123,7 +121,7 @@ A session's directory is the directory Claude Code was launched in — recovered
 
 - **Original directory exists** → resume there (the normal case).
 - **Original directory is gone** → ccs prompts you to type a target directory (empty = cancel). If the typed directory doesn't exist, ccs offers to create it.
-- cmux not on `PATH` → ccs prints the full command instead.
+- The resume command itself is swappable (`resume_cmd`) — nothing is tied to a multiplexer; teams without cmux/Tmux work as-is.
 
 ## Configuration
 
@@ -133,7 +131,7 @@ A session's directory is the directory Claude Code was launched in — recovered
 |---|---|---|
 | `lang` | `zh` | UI language: `zh en ja ko es fr de ru pt it` |
 | `theme` | `default` | `default` (cyan) · `ocean` (blue) · `dracula` (magenta) · `mono` (no color) |
-| `resume_cmd` | `claude --resume {sid}` | Resume command template; `{sid}` is replaced with the session id. Used by both `Enter` (inside the cmux workspace command) and `e` (exec'd in the current terminal). Example: `"claude --dangerously-skip-permissions --resume {sid}"` |
+| `resume_cmd` | `claude --resume {sid}` | Resume command template; `{sid}` is replaced with the session id and executed by `Enter`. Edit this file directly or set interactively via `ccs --config`. Example: `"claude --dangerously-skip-permissions --resume {sid}"` |
 | `custom` | — | user-defined palettes, see below |
 
 ### Custom themes

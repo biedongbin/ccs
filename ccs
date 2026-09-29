@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ccs — Claude Code Sessions: 跨目录会话浏览/搜索/归档/一键 cmux 恢复。仅标准库。"""
+"""ccs — Claude Code Sessions: 跨目录会话浏览/搜索/归档/一键恢复。仅标准库。"""
 import json, locale, os, re, shlex as _shlex, sys
 
 try:
@@ -140,135 +140,125 @@ def rel_time(ts: float, now: float) -> str:
 I18N_KEYS = (  # 有序：STRINGS 按 zip(keys, values) 展开，键序必须与各语言元组一致
     "help", "title", "badge_arch", "badge_proj", "badge_q", "detail", "hdr_cols",
     "f_title", "f_project", "f_branch", "f_id", "first_q", "last_a", "none",
-    "search_p", "picker_t", "picker_all", "too_small", "no_sid", "no_cmux",
+    "search_p", "picker_t", "picker_all", "too_small", "no_sid",
     "copied", "no_copy", "no_copy_tool", "gone_input", "gone_conf", "mk_fail",
     "op_fail", "rel_now", "rel_m", "rel_h", "rel_d",
     "ai_summary", "sum_run", "sum_started", "sum_done", "sum_fail",
     "rename_p", "rename_ok", "pager_hint")
 
 _LANG_DATA = {
-"zh": (" jk 选择 | / 搜索 | Tab 选项目 | Esc 返回 | Enter cmux恢复 | e 终端恢复 | a/u 归档还原 | d 删 | A 归档区 | J/K 详情滚动 | y/Y 复制首问/末答 | o 阅读 | R 改名 | s 总结 | r 重扫 | q 退出",
+"zh": (" jk 选择 | / 搜索 | Tab 选项目 | Esc 返回 | Enter 恢复 | a/u 归档还原 | d 删 | A 归档区 | J/K 详情滚动 | y/Y 复制首问/末答 | o 阅读 | R 改名 | s 总结 | r 重扫 | q 退出",
        "ccs · {n}", "【归档区】", "[项目: {v}]", "[搜: {v}]", "+ 详情", "时间     标题",
        "标题", "项目", "分支", "ID", "首条提问", "最后回复", "(无)",
        "搜索: ", " 项目过滤 j/k选择 回车确认 Esc取消 ", "全部", "终端太小 ({w}x{h}，需 ≥60x12)，q 退出",
-       "该会话无 sessionId，无法恢复", "cmux 不在 PATH，命令: ",
-       "已复制 {n} 字符到剪贴板", "无内容可复制", "无剪贴板工具（pbcopy/clip 均缺失）",
+       "该会话无 sessionId，无法恢复",        "已复制 {n} 字符到剪贴板", "无内容可复制", "无剪贴板工具（pbcopy/clip 均缺失）",
        "原目录 {p} 不存在，输入恢复目录(回车空=取消): ", "目录不存在: {p}，回车=自动创建 / 其他键=取消 ",
        "创建失败: {e}", "操作失败: {e}", "刚刚", "{n}分钟前", "{n}小时前", "{n}天前",
        "AI 总结", "总结生成中…", "总结任务已发起: {t}", "总结完成: {t}", "总结失败: {t}",
        "重命名 [{t}]: ", "已改名: {t}",
        " j/k 滚动 | Space 翻页 | g/G 首尾 | q 返回列表"),
-"en": (" jk move | / search | Tab projects | Esc back | Enter cmux resume | e terminal resume | a/u archive-restore | d delete | A archive | J/K detail scroll | y/Y copy first/last | o read | R rename | s summary | r rescan | q quit",
+"en": (" jk move | / search | Tab projects | Esc back | Enter resume | a/u archive-restore | d delete | A archive | J/K detail scroll | y/Y copy first/last | o read | R rename | s summary | r rescan | q quit",
        "ccs · {n}", "[ARCHIVE]", "[proj: {v}]", "[q: {v}]", "+ detail", "time     title",
        "title", "project", "branch", "ID", "first ask", "last reply", "(none)",
        "search: ", " filter: j/k select, Enter confirm, Esc cancel ", "ALL",
        "terminal too small ({w}x{h}, need >=60x12), q to quit",
-       "no sessionId, cannot resume", "cmux not in PATH, command: ",
-       "copied {n} chars", "nothing to copy", "no clipboard tool (pbcopy/clip unavailable)",
+       "no sessionId, cannot resume",        "copied {n} chars", "nothing to copy", "no clipboard tool (pbcopy/clip unavailable)",
        "original dir {p} gone, type resume dir (empty=cancel): ",
        "dir not found: {p}, Enter=create / other key=cancel ",
        "mkdir failed: {e}", "operation failed: {e}", "just now", "{n}m ago", "{n}h ago", "{n}d ago",
        "AI summary", "summarizing…", "summary started: {t}", "summary done: {t}", "summary failed: {t}",
        "rename [{t}]: ", "renamed: {t}",
        " j/k scroll | Space page | g/G ends | q back"),
-"ja": (" jk移動 | /検索 | Tabプロジェクト | Esc戻る | Enter cmux復元 | e端末復元 | a/uアーカイブ | d削除 | Aアーカイブ | J/Kスクロール | y/Yコピー | o閲読 | R改名 | s要約 | r再読込 | q終了",
+"ja": (" jk移動 | /検索 | Tabプロジェクト | Esc戻る | Enter復元 | a/uアーカイブ | d削除 | Aアーカイブ | J/Kスクロール | y/Yコピー | o閲読 | R改名 | s要約 | r再読込 | q終了",
        "ccs · {n}", "【アーカイブ】", "[proj: {v}]", "[検: {v}]", "+ 詳細", "時刻     タイトル",
        "タイトル", "プロジェクト", "ブランチ", "ID", "最初の質問", "最後の返信", "(なし)",
        "検索: ", " プロジェクト選択 j/k選択 Enter確定 Esc取消 ", "すべて",
        "端末が小さすぎます ({w}x{h}、≥60x12 必須)、q で終了",
-       "sessionId がなく復元できません", "cmux が PATH にありません、コマンド: ",
-       "{n} 文字をコピーしました", "コピーする内容なし", "クリップボードツールなし (pbcopy/clip なし)",
+       "sessionId がなく復元できません",        "{n} 文字をコピーしました", "コピーする内容なし", "クリップボードツールなし (pbcopy/clip なし)",
        "元ディレクトリ {p} がありません、復元先を入力(空で取消): ",
        "ディレクトリなし: {p}、Enter=作成 / 他キー=取消 ",
        "作成失敗: {e}", "操作失敗: {e}", "たった今", "{n}分前", "{n}時間前", "{n}日前",
        "AI 要約", "要約生成中…", "要約タスク開始: {t}", "要約完了: {t}", "要約失敗: {t}",
        "名前変更 [{t}]: ", "変更後: {t}",
        " j/kスクロール | Space改ページ | g/G先頭/末尾 | q戻る"),
-"ko": (" jk 이동 | / 검색 | Tab 프로젝트 | Esc 뒤로 | Enter cmux복원 | e 터미널 복원 | a/u 보관 | d 삭제 | A 보관함 | J/K 스크롤 | y/Y 복사 | o 읽기 | R 이름변경 | s 요약 | r 재스캔 | q 종료",
+"ko": (" jk 이동 | / 검색 | Tab 프로젝트 | Esc 뒤로 | Enter 복원 | a/u 보관 | d 삭제 | A 보관함 | J/K 스크롤 | y/Y 복사 | o 읽기 | R 이름변경 | s 요약 | r 재스캔 | q 종료",
        "ccs · {n}", "[보관함]", "[proj: {v}]", "[q: {v}]", "+ 상세", "시간     제목",
        "제목", "프로젝트", "브랜치", "ID", "첫 질문", "마지막 답변", "(없음)",
        "검색: ", " 프로젝트 필터 j/k선택 Enter확정 Esc취소 ", "전체",
        "터미널이 너무 작습니다 ({w}x{h}, ≥60x12 필요), q 종료",
-       "sessionId 없음, 복원 불가", "cmux 가 PATH 에 없음, 명령: ",
-       "{n}자 복사됨", "복사할 내용 없음", "클립보드 도구 없음 (pbcopy/clip 부재)",
+       "sessionId 없음, 복원 불가",        "{n}자 복사됨", "복사할 내용 없음", "클립보드 도구 없음 (pbcopy/clip 부재)",
        "원래 디렉터리 {p} 없음, 복원할 경로 입력(빈칸=취소): ",
        "디렉터리 없음: {p}, Enter=생성 / 다른 키=취소 ",
        "생성 실패: {e}", "작업 실패: {e}", "방금", "{n}분 전", "{n}시간 전", "{n}일 전",
        "AI 요약", "요약 생성 중…", "요약 시작: {t}", "요약 완료: {t}", "요약 실패: {t}",
        "이름 변경 [{t}]: ", "변경됨: {t}",
        " j/k 스크롤 | Space 페이지 | g/G 처음/끝 | q 돌아가기"),
-"es": (" jk mover | / buscar | Tab proyectos | Esc atrás | Enter cmux reanudar | e terminal | a/u archivar | d borrar | A archivo | J/K scroll | y/Y copiar | o leer | R renombrar | s resumen | r reescanear | q salir",
+"es": (" jk mover | / buscar | Tab proyectos | Esc atrás | Enter reanudar | a/u archivar | d borrar | A archivo | J/K scroll | y/Y copiar | o leer | R renombrar | s resumen | r reescanear | q salir",
        "ccs · {n}", "[ARCHIVO]", "[proy: {v}]", "[b: {v}]", "+ detalle", "hora     título",
        "título", "proyecto", "rama", "ID", "primera pregunta", "última respuesta", "(nada)",
        "buscar: ", " filtro: j/k elegir, Enter confirmar, Esc cancelar ", "TODAS",
        "terminal demasiado pequeña ({w}x{h}, ≥60x12), q salir",
-       "sin sessionId, no se puede reanudar", "cmux no está en PATH, comando: ",
-       "{n} caracteres copiados", "nada que copiar", "sin portapapeles (pbcopy/clip no disponibles)",
+       "sin sessionId, no se puede reanudar",        "{n} caracteres copiados", "nada que copiar", "sin portapapeles (pbcopy/clip no disponibles)",
        "dir original {p} no existe, escribe dir de reanudación (vacío=cancelar): ",
        "dir no encontrado: {p}, Enter=crear / otra tecla=cancelar ",
        "error al crear: {e}", "fallo de operación: {e}", "ahora", "hace {n}m", "hace {n}h", "hace {n}d",
        "Resumen IA", "generando resumen…", "resumen iniciado: {t}", "resumen listo: {t}", "fallo de resumen: {t}",
        "renombrar [{t}]: ", "renombrado: {t}",
        " j/k desplazar | Space página | g/G extremos | q volver"),
-"fr": (" jk déplacer | / rechercher | Tab projets | Esc retour | Enter cmux reprendre | e terminal | a/u archiver | d supprimer | A archives | J/K défilement | y/Y copier | o lire | R renommer | s résumé | r rescanner | q quitter",
+"fr": (" jk déplacer | / rechercher | Tab projets | Esc retour | Enter reprendre | a/u archiver | d supprimer | A archives | J/K défilement | y/Y copier | o lire | R renommer | s résumé | r rescanner | q quitter",
        "ccs · {n}", "[ARCHIVES]", "[proj: {v}]", "[q: {v}]", "+ détail", "heure     titre",
        "titre", "projet", "branche", "ID", "première question", "dernière réponse", "(aucun)",
        "recherche : ", " filtre : j/k choisir, Enter valider, Esc annuler ", "TOUTES",
        "terminal trop petit ({w}x{h}, ≥60x12), q quitter",
-       "sessionId absent, reprise impossible", "cmux absent du PATH, commande : ",
-       "{n} caractères copiés", "rien à copier", "pas de presse-papiers (pbcopy/clip indisponibles)",
+       "sessionId absent, reprise impossible",        "{n} caractères copiés", "rien à copier", "pas de presse-papiers (pbcopy/clip indisponibles)",
        "répertoire d'origine {p} absent, tapez répertoire de reprise (vide=annuler) : ",
        "répertoire introuvable : {p}, Enter=créer / autre touche=annuler ",
        "échec création : {e}", "échec : {e}", "à l'instant", "il y a {n}m", "il y a {n}h", "il y a {n}j",
        "Résumé IA", "résumé en cours…", "résumé lancé : {t}", "résumé terminé : {t}", "échec du résumé : {t}",
        "renommer [{t}] : ", "renommé : {t}",
        " j/k défiler | Space page | g/G extrémités | q retour"),
-"de": (" jk bewegen | / suchen | Tab Projekte | Esc zurück | Enter cmux fortsetzen | e Terminal | a/u archivieren | d löschen | A Archiv | J/K scrollen | y/Y kopieren | o lesen | R umbenennen | s Zusammenfassung | r neu einlesen | q beenden",
+"de": (" jk bewegen | / suchen | Tab Projekte | Esc zurück | Enter fortsetzen | a/u archivieren | d löschen | A Archiv | J/K scrollen | y/Y kopieren | o lesen | R umbenennen | s Zusammenfassung | r neu einlesen | q beenden",
        "ccs · {n}", "[ARCHIV]", "[proj: {v}]", "[q: {v}]", "+ Detail", "Zeit     Titel",
        "Titel", "Projekt", "Branch", "ID", "erste Frage", "letzte Antwort", "(nichts)",
        "Suche: ", " Filter: j/k wählen, Enter bestätigen, Esc abbrechen ", "ALLE",
        "Terminal zu klein ({w}x{h}, ≥60x12), q beenden",
-       "keine sessionId, kein Resume", "cmux nicht im PATH, Befehl: ",
-       "{n} Zeichen kopiert", "nichts zu kopieren", "keine Zwischenablage (pbcopy/clip fehlen)",
+       "keine sessionId, kein Resume",        "{n} Zeichen kopiert", "nichts zu kopieren", "keine Zwischenablage (pbcopy/clip fehlen)",
        "Original-Verzeichnis {p} fehlt, Resume-Verzeichnis eingeben (leer=Abbruch): ",
        "Verzeichnis fehlt: {p}, Enter=erstellen / andere Taste=abbrechen ",
        "Erstellen fehlgeschlagen: {e}", "Fehler: {e}", "gerade", "vor {n}M", "vor {n}S", "vor {n}T",
        "KI-Zusammenfassung", "Zusammenfassung läuft…", "Zusammenfassung gestartet: {t}", "Zusammenfassung fertig: {t}", "Zusammenfassung fehlgeschlagen: {t}",
        "umbenennen [{t}]: ", "umbenannt: {t}",
        " j/k scrollen | Space Seite | g/G Enden | q zurück"),
-"ru": (" jk вниз/вверх | / поиск | Tab проекты | Esc назад | Enter cmux возобновить | e терминал | a/u архив | d удалить | A архив | J/K прокрутка | y/Y копировать | o чтение | R переим. | s обзор | r пересканировать | q выход",
+"ru": (" jk вниз/вверх | / поиск | Tab проекты | Esc назад | Enter возобновить | a/u архив | d удалить | A архив | J/K прокрутка | y/Y копировать | o чтение | R переим. | s обзор | r пересканировать | q выход",
        "ccs · {n}", "[АРХИВ]", "[proj: {v}]", "[q: {v}]", "+ детали", "время     заголовок",
        "заголовок", "проект", "ветка", "ID", "первый вопрос", "последний ответ", "(нет)",
        "поиск: ", " фильтр: j/k выбрать, Enter подтвердить, Esc отмена ", "ВСЕ",
        "терминал слишком мал ({w}x{h}, ≥60x12), q выход",
-       "нет sessionId, возобновление невозможно", "cmux не в PATH, команда: ",
-       "скопировано {n} символов", "нечего копировать", "нет буфера обмена (нет pbcopy/clip)",
+       "нет sessionId, возобновление невозможно",        "скопировано {n} символов", "нечего копировать", "нет буфера обмена (нет pbcopy/clip)",
        "исходный каталог {p} отсутствует, введите каталог возобновления (пусто=отмена): ",
        "каталог не найден: {p}, Enter=создать / другая клавиша=отмена ",
        "ошибка создания: {e}", "сбой: {e}", "только что", "{n}м назад", "{n}ч назад", "{n}д назад",
        "ИИ-резюме", "создание резюме…", "резюме запущено: {t}", "резюме готово: {t}", "ошибка резюме: {t}",
        "переименовать [{t}]: ", "переименовано: {t}",
        " j/k прокрутка | Space страница | g/G края | q назад"),
-"pt": (" jk mover | / buscar | Tab projetos | Esc voltar | Enter cmux retomar | e terminal | a/u arquivar | d excluir | A arquivo | J/K rolar | y/Y copiar | o ler | R renomear | s resumo | r reescanear | q sair",
+"pt": (" jk mover | / buscar | Tab projetos | Esc voltar | Enter retomar | a/u arquivar | d excluir | A arquivo | J/K rolar | y/Y copiar | o ler | R renomear | s resumo | r reescanear | q sair",
        "ccs · {n}", "[ARQUIVO]", "[proj: {v}]", "[q: {v}]", "+ detalhes", "hora     título",
        "título", "projeto", "branch", "ID", "primeira pergunta", "última resposta", "(nada)",
        "buscar: ", " filtro: j/k escolher, Enter confirmar, Esc cancelar ", "TODAS",
        "terminal muito pequeno ({w}x{h}, ≥60x12), q sair",
-       "sem sessionId, não é possível retomar", "cmux fora do PATH, comando: ",
-       "{n} caracteres copiados", "nada para copiar", "sem área de transferência (pbcopy/clip ausentes)",
+       "sem sessionId, não é possível retomar",        "{n} caracteres copiados", "nada para copiar", "sem área de transferência (pbcopy/clip ausentes)",
        "diretório original {p} ausente, digite diretório (vazio=cancelar): ",
        "diretório não encontrado: {p}, Enter=criar / outra tecla=cancelar ",
        "falha ao criar: {e}", "falha: {e}", "agora", "há {n}m", "há {n}h", "há {n}d",
        "Resumo IA", "gerando resumo…", "resumo iniciado: {t}", "resumo completo: {t}", "falha no resumo: {t}",
        "renomear [{t}]: ", "renomeado: {t}",
        " j/k rolar | Space página | g/G extremos | q voltar"),
-"it": (" jk sposta | / cerca | Tab progetti | Esc indietro | Enter cmux riprendi | e terminale | a/u archivia | d elimina | A archivio | J/K scorri | y/Y copia | o leggere | R rinomina | s riepilogo | r riscansiona | q esci",
+"it": (" jk sposta | / cerca | Tab progetti | Esc indietro | Enter riprendi | a/u archivia | d elimina | A archivio | J/K scorri | y/Y copia | o leggere | R rinomina | s riepilogo | r riscansiona | q esci",
        "ccs · {n}", "[ARCHIVIO]", "[proj: {v}]", "[q: {v}]", "+ dettaglio", "ora     titolo",
        "titolo", "progetto", "ramo", "ID", "prima domanda", "ultima risposta", "(nessuno)",
        "cerca: ", " filtro: j/k scegli, Enter conferma, Esc annulla ", "TUTTE",
        "terminale troppo piccolo ({w}x{h}, ≥60x12), q esci",
-       "senza sessionId, ripresa impossibile", "cmux non in PATH, comando: ",
-       "{n} caratteri copiati", "niente da copiare", "nessuno strumento appunti (pbcopy/clip assenti)",
+       "senza sessionId, ripresa impossibile",        "{n} caratteri copiati", "niente da copiare", "nessuno strumento appunti (pbcopy/clip assenti)",
        "dir originale {p} assente, digita dir di ripresa (vuoto=annulla): ",
        "dir inesistente: {p}, Enter=crea / altro tasto=annulla ",
        "creazione fallita: {e}", "errore: {e}", "adesso", "{n}m fa", "{n}h fa", "{n}g fa",
@@ -555,16 +545,7 @@ def harvest_summaries(max_age: float = 120):
     if sums is not None:
         save_summaries(sums)
 
-def cmux_available() -> bool:
-    return _shutil.which("cmux") is not None
-
 DEFAULT_RESUME_CMD = "claude --resume {sid}"
-
-def build_cmux_argv(m: SessionMeta, cwd_exists: bool, fallback_cwd: str,
-                    cmd: str = DEFAULT_RESUME_CMD):
-    cwd = m.cwd if cwd_exists and m.cwd else fallback_cwd
-    return ["cmux", "new-workspace", "--name", m.title[:40].strip() or m.sid[:8],
-            "--cwd", cwd, "--command", cmd.format(sid=m.sid)]
 
 def build_direct_argv(m: SessionMeta, cmd: str = DEFAULT_RESUME_CMD):
     return _shlex.split(cmd.format(sid=m.sid))
@@ -675,20 +656,94 @@ def _box(stdscr, top, left, w, h, attr=0):
             pass
 
 def _hard_wrap(t: str, w: int):
-    """CJK 硬折行：中文按 2 列宽计，避免 textwrap 对无空格中文失效。"""
+    """按 '|' 快捷键段贪心折行：同一键的说明永不拆成两行（宽 CJK 按 2 列计）。"""
     out, cur, cw = [], "", 0
-    for ch in t:
-        if ch == "\n":
-            out.append(cur); cur, cw = "", 0
+    for raw in t.split("|"):
+        seg = raw.strip()
+        if not seg:
             continue
-        c = 2 if ord(ch) > 0x2E80 else 1
-        if cw + c > w:
-            out.append(cur); cur, cw = ch, c
-        else:
-            cur += ch; cw += c
+        lead = 3 if cur else 1                    # 行首前导 1 列；段间 " | " 计 3 列
+        sw = _dw(seg)
+        if cur and cw + lead + sw > w:
+            out.append(cur)
+            cur, cw, lead = "", 0, 1
+        if lead + sw > w:                         # 单段超行宽（W≥60 不会触发）才钳断
+            seg = _cut(seg, max(1, w - lead))
+            sw = _dw(seg)
+        cur += (" " if not cur else " | ") + seg
+        cw += lead + sw
     if cur:
         out.append(cur)
     return out or [""]
+
+def _fold_wide(line: str, w: int):
+    """字符级 CJK 折行：超宽行按显示列断开（宽字符 2 列）。"""
+    if _dw(line) <= w:
+        return [line]
+    out, cur, cw = [], "", 0
+    for ch in line:
+        c = 2 if ord(ch) > 0x2E80 else 1
+        if cw + c > w:
+            out.append(cur); cur, cw = "", 0
+        cur += ch; cw += c
+    if cur:
+        out.append(cur)
+    return out
+
+def _md_table(rows, w: int):
+    """'|' 行族 → 对齐文本行。跳过 |---| 对齐行；列宽=max 显示宽，双空格分隔。"""
+    body = [r for r in rows
+            if not (re.fullmatch(r"[ \t:|-]+", r) and "-" in r)]
+    grid = [[re.sub(r"\*\*([^*]+)\*\*", r"\1", c.strip())
+             for c in r.strip().strip("|").split("|")] for r in body]
+    if not grid:
+        return []
+    ncol = max(len(r) for r in grid)
+    widths = [max(_dw(r[i]) if i < len(r) else 0 for r in grid) for i in range(ncol)]
+    out = []
+    for r in grid:
+        s = "  ".join(_pad(r[i] if i < len(r) else "", widths[i]) for i in range(ncol))
+        out.append(_cut(s.rstrip(), w))
+    return out
+
+def _md_lines(text: str, w: int):
+    """markdown 轻渲染 → 显示行列表（每行 ≤ w 列）。
+    ponytail: 无内联着色/嵌套结构渲染，只做表格对齐+标题+列表+围栏+粗体剥离；升级走 attr 分段。"""
+    out, fence = [], False
+    raw_lines = text.split("\n")
+    i = 0
+    while i < len(raw_lines):
+        ln = raw_lines[i]
+        if ln.strip().startswith("```"):          # 围栏：只切换状态，不输出
+            fence = not fence
+            i += 1
+            continue
+        if fence:
+            out.append("  " + ln)                  # fence 内原样（2 空格缩进），不做转换
+            i += 1
+            continue
+        if ln.lstrip().startswith("|") and i + 1 < len(raw_lines) and raw_lines[i + 1].lstrip().startswith("|"):
+            j = i
+            while j < len(raw_lines) and raw_lines[j].lstrip().startswith("|"):
+                j += 1
+            out += _md_table(raw_lines[i:j], w)
+            i = j
+            continue
+        s = ln.rstrip()
+        m = re.match(r"^(#{1,})\s+(.*)$", s)
+        if m:
+            s = ("■ " if len(m.group(1)) == 1 else "▪ " if len(m.group(1)) == 2 else "· ") + m.group(2)
+        else:
+            m = re.match(r"^(\s*)[-*] (.*)$", s)
+            if m:
+                s = m.group(1) + "• " + m.group(2)
+        s = re.sub(r"\*\*([^*]+)\*\*", r"\1", s)
+        out.append(s)
+        i += 1
+    folded = []
+    for ln in out:
+        folded += _fold_wide(ln, w)
+    return folded or [""]
 
 def run_check() -> int:
     metas = scan()
@@ -719,13 +774,13 @@ def _detail_lines(m, width, sums=None):
         s = sums.get(m.sid)
         if s and s.get("text"):
             lines += bar + [[(T("ai_summary"), lab)]] \
-                + [[(t, 0)] for t in _hard_wrap(s["text"], width)]
+                + [[(t, 0)] for t in _md_lines(s["text"], width)]
         elif m.sid in JOBS:
             lines += bar + [[(T("ai_summary"), lab)]] + [[(T("sum_run"), dim)]]
     lines += bar + [[(T("first_q"), lab)]] \
-        + [[(t, 0)] for t in _hard_wrap(m.first_user or T("none"), width)] \
+        + [[(t, 0)] for t in _md_lines(m.first_user or T("none"), width)] \
         + bar + [[(T("last_a"), lab)]] \
-        + [[(t, 0)] for t in _hard_wrap(m.last_reply or T("none"), width)]
+        + [[(t, 0)] for t in _md_lines(m.last_reply or T("none"), width)]
     return lines
 
 def _copy_backend():
@@ -754,7 +809,7 @@ def _clamp_off(cursor: int, off: int, n: int, cap: int) -> int:
         off = cursor - cap + 1
     return off
 
-def _resume(stdscr, st, row, direct=False, cmd=DEFAULT_RESUME_CMD):
+def _resume(stdscr, st, row, cmd=DEFAULT_RESUME_CMD):
     m = st.current()
     if not m or not m.sid:
         return T("no_sid")
@@ -777,17 +832,14 @@ def _resume(stdscr, st, row, direct=False, cmd=DEFAULT_RESUME_CMD):
                 os.makedirs(eff, exist_ok=True)
             except OSError as e:
                 return T("mk_fail").format(e=e)
-    argv = build_cmux_argv(m, cwd_exists=cwd_ok, fallback_cwd=eff, cmd=cmd)
-    if not direct and not cmux_available():
-        return T("no_cmux") + " ".join(argv)
+    dargv = build_direct_argv(m, cmd=cmd)
     curses.endwin()
-    if direct:
-        dargv = build_direct_argv(m, cmd=cmd)
-        if eff != os.getcwd():
-            os.chdir(eff)                                # 终端直恢复也要落回原工程
-        os.execvp(dargv[0], dargv)                       # 当前终端接管，不返回
-    _subprocess.run(argv)
-    return "OPENED"                                  # 调用方收到后退出 TUI（endwin 后循环不可继续)
+    if eff != os.getcwd():
+        os.chdir(eff)                                # 落回会话原启动目录再恢复
+    try:
+        os.execvp(dargv[0], dargv)                   # 当前终端接管，正常不返回
+    except OSError as e:
+        return T("op_fail").format(e=e)
 
 def _prompt(stdscr, y, label) -> str:
     curses.echo()
@@ -844,6 +896,10 @@ def run_config(first_run: bool = False) -> None:
     raw = input(f"Theme [1-{len(themes)}, Enter=keep]: ").strip()
     if raw.isdigit() and 1 <= int(raw) <= len(themes):
         cfg["theme"] = themes[int(raw) - 1]
+    print(f"resume_cmd [{cfg.get('resume_cmd', DEFAULT_RESUME_CMD)}]: ", end="")
+    raw = input().strip()
+    if raw:
+        cfg["resume_cmd"] = raw
     save_config(cfg)
     print(f"saved -> {config_path()}")
 
@@ -903,7 +959,6 @@ def main(argv) -> int:
             picker_idx = cl.index(st.project) if st.project in cl else 0
             picker_open = True
         curses.curs_set(0)
-        stdscr.timeout(500)          # 半秒键超时：阻塞等待中也能轮询总结任务
         PALETTES = {
             "default": (curses.COLOR_CYAN, curses.COLOR_YELLOW),
             "ocean":   (curses.COLOR_BLUE, curses.COLOR_GREEN),
@@ -1071,6 +1126,7 @@ def main(argv) -> int:
                 _safe_add(pwin, H - 1, 0, _cut(T("pager_hint"), W - 1), curses.A_REVERSE)
                 pwin.touchwin()
                 pwin.refresh()
+            stdscr.timeout(500 if JOBS else -1)   # 无后台任务时阻塞等键：空闲零重绘（消闪烁）；有任务时半秒轮询
             try:
                 k = stdscr.get_wch()                 # 宽字符读取：CJK 整字返回，杜绝字节级乱码
             except curses.error:
@@ -1142,13 +1198,7 @@ def main(argv) -> int:
                 st.cursor = 0
                 off = 0
             elif k in ("KEY_ENTER", "\n"):
-                r = _resume(stdscr, st, H - 2, cmd=resume_cmd)
-                if r == "OPENED":
-                    return                           # cmux 已开，退出 TUI
-                if r is not None:
-                    msg = r                          # cmux 降级命令 / 无 sessionId 提示
-            elif k == "e":
-                r = _resume(stdscr, st, H - 2, direct=True, cmd=resume_cmd)   # execvp 成功则不返回
+                r = _resume(stdscr, st, H - 2, cmd=resume_cmd)   # 当前终端 exec 接管，成功不返回
                 if r is not None:
                     msg = r
             elif k == "y" and st.current():

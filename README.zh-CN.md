@@ -29,7 +29,7 @@ curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
 ccs
 ```
 
-就这样。选中会话，回车，它在原目录的 [cmux](https://github.com/cmux/cmux) workspace 里重开。
+就这样。选中会话，回车，当前终端原地接管恢复——回到会话当初的启动目录。
 
 ## 一览
 
@@ -72,7 +72,6 @@ Windows 差异须知：
 
 - **终端**：请用 Windows Terminal。传统控制台 conhost 的 CJK 宽度计算错乱，双栏布局会花。
 - **剪贴板**：`y` / `Y` 走 `clip.exe`（pbcopy 仅 macOS）；两者都缺时 ccs 明确提示，不影响其他功能。
-- **cmux**：Windows 上无 cmux——`Enter` 不开 workspace，改为打印完整恢复命令。
 - **稳定性说明**：核心逻辑（解析/缓存/归档）为纯 Python 且有测试覆盖；curses 渲染路径在 macOS/Linux 上开发验证，Windows 属尽力兼容（best-effort）。
 
 ## 使用
@@ -92,8 +91,7 @@ ccs --check    # 非交互：统计会话/项目/归档数与最新标题
 | ↑/↓ 或 j/k | 移动 |
 | `/` | 搜索（标题 / 项目 / 会话 ID，大小写不敏感） |
 | Tab | 项目过滤弹层（Enter 确认，Esc 取消） |
-| Enter | 在原启动目录新建 cmux workspace 恢复 |
-| e | 当前终端直接恢复（`claude --resume <id>`，exec 接管） |
+| Enter | 在当前终端原地恢复：chdir 回会话原启动目录，exec 接管（命令模板可配，见 `resume_cmd`） |
 | a / u | 归档 / 还原 |
 | A | 归档区 ↔ 主列表 |
 | d | 软删除（移入 `~/.ccs/trash/`，见下文） |
@@ -123,7 +121,7 @@ ccs --check    # 非交互：统计会话/项目/归档数与最新标题
 
 - **原目录健在** → 原地恢复（绝大多数会话）。
 - **原目录已删** → 手动输入恢复目录（留空 = 取消）。输入的目录不存在时，询问是否自动创建。
-- cmux 不在 PATH → 打印完整命令由用户手动执行。
+- 恢复命令可整条替换（`resume_cmd`），不绑定任何多路复用器——不用 cmux/Tmux 的团队照常使用。
 
 ## 配置
 
@@ -133,7 +131,7 @@ ccs --check    # 非交互：统计会话/项目/归档数与最新标题
 |---|---|---|
 | `lang` | `zh` | 界面语言：`zh en ja ko es fr de ru pt it` |
 | `theme` | `default` | `default`（青）· `ocean`（蓝）· `dracula`（紫）· `mono`（无色） |
-| `resume_cmd` | `claude --resume {sid}` | 恢复命令模板，`{sid}` 替换为会话 ID；`Enter`（cmux workspace 内执行）与 `e`（当前终端接管）共用。示例：`"claude --dangerously-skip-permissions --resume {sid}"` |
+| `resume_cmd` | `claude --resume {sid}` | 恢复命令模板，`{sid}` 替换为会话 ID，`Enter` 执行；可直接编辑本文件或 `ccs --config` 交互设置。示例：`"claude --dangerously-skip-permissions --resume {sid}"` |
 | `custom` | — | 自定义调色板，见下 |
 
 ### 自定义主题
