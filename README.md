@@ -98,9 +98,9 @@ First launch with no `~/.ccs/config.json` runs a guided setup for language and t
 | J / K | scroll the detail pane |
 | `o` | read the current session fullscreen (pager: j/k scroll, Space page, g/G ends, q back) — for long AI summaries |
 | y / Y | copy first question / last reply to clipboard (pbcopy) |
-| R | rename the session — equivalent to Claude Code's `/rename` (appends a `custom-title` record; the official picker shows it too) |
+| r / R | rename the session — equivalent to Claude Code's `/rename` (appends a `custom-title` record; the official picker shows it too) |
 | s | AI summary: runs a background `claude -p` analysis of the session (goals / progress % / branch state / issues list), result stored in `~/.ccs/summaries.json` and shown at the top of the detail pane; non-blocking — switching sessions doesn't cancel it |
-| r | rescan |
+| F5 or Ctrl+L | rescan (Cmd-key combos never reach a terminal app, hence no Cmd+R) |
 | Esc | always goes back: close picker → clear search/filter → exit archive view |
 | q | quit |
 

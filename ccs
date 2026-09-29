@@ -147,7 +147,7 @@ I18N_KEYS = (  # 有序：STRINGS 按 zip(keys, values) 展开，键序必须与
     "rename_p", "rename_ok", "pager_hint")
 
 _LANG_DATA = {
-"zh": (" jk 选择 | / 搜索 | Tab 选项目 | Esc 返回 | Enter 恢复 | a/u 归档还原 | d 删 | A 归档区 | J/K 详情滚动 | y/Y 复制首问/末答 | o 阅读 | R 改名 | s 总结 | r 重扫 | q 退出",
+"zh": (" jk 选择 | / 搜索 | Tab 选项目 | Esc 返回 | Enter 恢复 | a/u 归档还原 | d 删 | A 归档区 | J/K 详情滚动 | y/Y 复制首问/末答 | o 阅读 | r 改名 | s 总结 | F5 重扫 | q 退出",
        "ccs · {n}", "【归档区】", "[项目: {v}]", "[搜: {v}]", "+ 详情", "时间     标题",
        "标题", "项目", "分支", "ID", "首条提问", "最后回复", "(无)",
        "搜索: ", " 项目过滤 j/k选择 回车确认 Esc取消 ", "全部", "终端太小 ({w}x{h}，需 ≥60x12)，q 退出",
@@ -157,7 +157,7 @@ _LANG_DATA = {
        "AI 总结", "总结生成中…", "总结任务已发起: {t}", "总结完成: {t}", "总结失败: {t}",
        "重命名 [{t}]: ", "已改名: {t}",
        " j/k 滚动 | Space 翻页 | g/G 首尾 | q 返回列表"),
-"en": (" jk move | / search | Tab projects | Esc back | Enter resume | a/u archive-restore | d delete | A archive | J/K detail scroll | y/Y copy first/last | o read | R rename | s summary | r rescan | q quit",
+"en": (" jk move | / search | Tab projects | Esc back | Enter resume | a/u archive-restore | d delete | A archive | J/K detail scroll | y/Y copy first/last | o read | r rename | s summary | F5 rescan | q quit",
        "ccs · {n}", "[ARCHIVE]", "[proj: {v}]", "[q: {v}]", "+ detail", "time     title",
        "title", "project", "branch", "ID", "first ask", "last reply", "(none)",
        "search: ", " filter: j/k select, Enter confirm, Esc cancel ", "ALL",
@@ -169,7 +169,7 @@ _LANG_DATA = {
        "AI summary", "summarizing…", "summary started: {t}", "summary done: {t}", "summary failed: {t}",
        "rename [{t}]: ", "renamed: {t}",
        " j/k scroll | Space page | g/G ends | q back"),
-"ja": (" jk移動 | /検索 | Tabプロジェクト | Esc戻る | Enter復元 | a/uアーカイブ | d削除 | Aアーカイブ | J/Kスクロール | y/Yコピー | o閲読 | R改名 | s要約 | r再読込 | q終了",
+"ja": (" jk移動 | /検索 | Tabプロジェクト | Esc戻る | Enter復元 | a/uアーカイブ | d削除 | Aアーカイブ | J/Kスクロール | y/Yコピー | o閲読 | r改名 | s要約 | F5再読込 | q終了",
        "ccs · {n}", "【アーカイブ】", "[proj: {v}]", "[検: {v}]", "+ 詳細", "時刻     タイトル",
        "タイトル", "プロジェクト", "ブランチ", "ID", "最初の質問", "最後の返信", "(なし)",
        "検索: ", " プロジェクト選択 j/k選択 Enter確定 Esc取消 ", "すべて",
@@ -181,7 +181,7 @@ _LANG_DATA = {
        "AI 要約", "要約生成中…", "要約タスク開始: {t}", "要約完了: {t}", "要約失敗: {t}",
        "名前変更 [{t}]: ", "変更後: {t}",
        " j/kスクロール | Space改ページ | g/G先頭/末尾 | q戻る"),
-"ko": (" jk 이동 | / 검색 | Tab 프로젝트 | Esc 뒤로 | Enter 복원 | a/u 보관 | d 삭제 | A 보관함 | J/K 스크롤 | y/Y 복사 | o 읽기 | R 이름변경 | s 요약 | r 재스캔 | q 종료",
+"ko": (" jk 이동 | / 검색 | Tab 프로젝트 | Esc 뒤로 | Enter 복원 | a/u 보관 | d 삭제 | A 보관함 | J/K 스크롤 | y/Y 복사 | o 읽기 | r 이름변경 | s 요약 | F5 재스캔 | q 종료",
        "ccs · {n}", "[보관함]", "[proj: {v}]", "[q: {v}]", "+ 상세", "시간     제목",
        "제목", "프로젝트", "브랜치", "ID", "첫 질문", "마지막 답변", "(없음)",
        "검색: ", " 프로젝트 필터 j/k선택 Enter확정 Esc취소 ", "전체",
@@ -193,7 +193,7 @@ _LANG_DATA = {
        "AI 요약", "요약 생성 중…", "요약 시작: {t}", "요약 완료: {t}", "요약 실패: {t}",
        "이름 변경 [{t}]: ", "변경됨: {t}",
        " j/k 스크롤 | Space 페이지 | g/G 처음/끝 | q 돌아가기"),
-"es": (" jk mover | / buscar | Tab proyectos | Esc atrás | Enter reanudar | a/u archivar | d borrar | A archivo | J/K scroll | y/Y copiar | o leer | R renombrar | s resumen | r reescanear | q salir",
+"es": (" jk mover | / buscar | Tab proyectos | Esc atrás | Enter reanudar | a/u archivar | d borrar | A archivo | J/K scroll | y/Y copiar | o leer | r renombrar | s resumen | F5 reescanear | q salir",
        "ccs · {n}", "[ARCHIVO]", "[proy: {v}]", "[b: {v}]", "+ detalle", "hora     título",
        "título", "proyecto", "rama", "ID", "primera pregunta", "última respuesta", "(nada)",
        "buscar: ", " filtro: j/k elegir, Enter confirmar, Esc cancelar ", "TODAS",
@@ -205,7 +205,7 @@ _LANG_DATA = {
        "Resumen IA", "generando resumen…", "resumen iniciado: {t}", "resumen listo: {t}", "fallo de resumen: {t}",
        "renombrar [{t}]: ", "renombrado: {t}",
        " j/k desplazar | Space página | g/G extremos | q volver"),
-"fr": (" jk déplacer | / rechercher | Tab projets | Esc retour | Enter reprendre | a/u archiver | d supprimer | A archives | J/K défilement | y/Y copier | o lire | R renommer | s résumé | r rescanner | q quitter",
+"fr": (" jk déplacer | / rechercher | Tab projets | Esc retour | Enter reprendre | a/u archiver | d supprimer | A archives | J/K défilement | y/Y copier | o lire | r renommer | s résumé | F5 rescanner | q quitter",
        "ccs · {n}", "[ARCHIVES]", "[proj: {v}]", "[q: {v}]", "+ détail", "heure     titre",
        "titre", "projet", "branche", "ID", "première question", "dernière réponse", "(aucun)",
        "recherche : ", " filtre : j/k choisir, Enter valider, Esc annuler ", "TOUTES",
@@ -217,7 +217,7 @@ _LANG_DATA = {
        "Résumé IA", "résumé en cours…", "résumé lancé : {t}", "résumé terminé : {t}", "échec du résumé : {t}",
        "renommer [{t}] : ", "renommé : {t}",
        " j/k défiler | Space page | g/G extrémités | q retour"),
-"de": (" jk bewegen | / suchen | Tab Projekte | Esc zurück | Enter fortsetzen | a/u archivieren | d löschen | A Archiv | J/K scrollen | y/Y kopieren | o lesen | R umbenennen | s Zusammenfassung | r neu einlesen | q beenden",
+"de": (" jk bewegen | / suchen | Tab Projekte | Esc zurück | Enter fortsetzen | a/u archivieren | d löschen | A Archiv | J/K scrollen | y/Y kopieren | o lesen | r umbenennen | s Zusammenfassung | F5 neu einlesen | q beenden",
        "ccs · {n}", "[ARCHIV]", "[proj: {v}]", "[q: {v}]", "+ Detail", "Zeit     Titel",
        "Titel", "Projekt", "Branch", "ID", "erste Frage", "letzte Antwort", "(nichts)",
        "Suche: ", " Filter: j/k wählen, Enter bestätigen, Esc abbrechen ", "ALLE",
@@ -229,7 +229,7 @@ _LANG_DATA = {
        "KI-Zusammenfassung", "Zusammenfassung läuft…", "Zusammenfassung gestartet: {t}", "Zusammenfassung fertig: {t}", "Zusammenfassung fehlgeschlagen: {t}",
        "umbenennen [{t}]: ", "umbenannt: {t}",
        " j/k scrollen | Space Seite | g/G Enden | q zurück"),
-"ru": (" jk вниз/вверх | / поиск | Tab проекты | Esc назад | Enter возобновить | a/u архив | d удалить | A архив | J/K прокрутка | y/Y копировать | o чтение | R переим. | s обзор | r пересканировать | q выход",
+"ru": (" jk вниз/вверх | / поиск | Tab проекты | Esc назад | Enter возобновить | a/u архив | d удалить | A архив | J/K прокрутка | y/Y копировать | o чтение | r переим. | s обзор | F5 пересканировать | q выход",
        "ccs · {n}", "[АРХИВ]", "[proj: {v}]", "[q: {v}]", "+ детали", "время     заголовок",
        "заголовок", "проект", "ветка", "ID", "первый вопрос", "последний ответ", "(нет)",
        "поиск: ", " фильтр: j/k выбрать, Enter подтвердить, Esc отмена ", "ВСЕ",
@@ -241,7 +241,7 @@ _LANG_DATA = {
        "ИИ-резюме", "создание резюме…", "резюме запущено: {t}", "резюме готово: {t}", "ошибка резюме: {t}",
        "переименовать [{t}]: ", "переименовано: {t}",
        " j/k прокрутка | Space страница | g/G края | q назад"),
-"pt": (" jk mover | / buscar | Tab projetos | Esc voltar | Enter retomar | a/u arquivar | d excluir | A arquivo | J/K rolar | y/Y copiar | o ler | R renomear | s resumo | r reescanear | q sair",
+"pt": (" jk mover | / buscar | Tab projetos | Esc voltar | Enter retomar | a/u arquivar | d excluir | A arquivo | J/K rolar | y/Y copiar | o ler | r renomear | s resumo | F5 reescanear | q sair",
        "ccs · {n}", "[ARQUIVO]", "[proj: {v}]", "[q: {v}]", "+ detalhes", "hora     título",
        "título", "projeto", "branch", "ID", "primeira pergunta", "última resposta", "(nada)",
        "buscar: ", " filtro: j/k escolher, Enter confirmar, Esc cancelar ", "TODAS",
@@ -253,7 +253,7 @@ _LANG_DATA = {
        "Resumo IA", "gerando resumo…", "resumo iniciado: {t}", "resumo completo: {t}", "falha no resumo: {t}",
        "renomear [{t}]: ", "renomeado: {t}",
        " j/k rolar | Space página | g/G extremos | q voltar"),
-"it": (" jk sposta | / cerca | Tab progetti | Esc indietro | Enter riprendi | a/u archivia | d elimina | A archivio | J/K scorri | y/Y copia | o leggere | R rinomina | s riepilogo | r riscansiona | q esci",
+"it": (" jk sposta | / cerca | Tab progetti | Esc indietro | Enter riprendi | a/u archivia | d elimina | A archivio | J/K scorri | y/Y copia | o leggere | r rinomina | s riepilogo | F5 riscansiona | q esci",
        "ccs · {n}", "[ARCHIVIO]", "[proj: {v}]", "[q: {v}]", "+ dettaglio", "ora     titolo",
        "titolo", "progetto", "ramo", "ID", "prima domanda", "ultima risposta", "(nessuno)",
        "cerca: ", " filtro: j/k scegli, Enter conferma, Esc annulla ", "TUTTE",
@@ -1217,7 +1217,7 @@ def main(argv) -> int:
             elif k == "o" and st.current():
                 pager_open = True        # 全屏阅读当前会话详情
                 pgoff = 0
-            elif k == "R" and st.current():
+            elif k in ("r", "R") and st.current():
                 cur0 = st.current()
                 nm = _prompt(stdscr, H - 2, T("rename_p").format(t=cur0.title[:24]))
                 if nm:
@@ -1252,7 +1252,7 @@ def main(argv) -> int:
             elif k == "A":
                 st = AppState(st.sessions, archive_view=not st.archive_view)
                 st.query, st.project = "", None
-            elif k == "r":
+            elif k in ("KEY_F(5)", "\x0c"):   # F5 / Ctrl+L 重扫（Cmd+R 被终端截留，进不了 stdin）
                 st = AppState(scan(refresh=True), archive_view=st.archive_view)
             elif k == "\t":                            # Tab: 打开项目选择弹层
                 _open_picker()

@@ -98,9 +98,9 @@ ccs --check    # 非交互：统计会话/项目/归档数与最新标题
 | J / K | 滚动右侧详情 |
 | o | 全屏阅读当前会话详情（j/k 滚动、Space 翻页、g/G 首尾、q 返回列表）——AI 总结较长时看得完整 |
 | y / Y | 复制首条提问 / 最后回复到剪贴板（pbcopy） |
-| R | 重命名会话——等同 Claude Code 内 `/rename`（追加 `custom-title` 记录，官方 picker 同样显示） |
+| r / R | 重命名会话——等同 Claude Code 内 `/rename`（追加 `custom-title` 记录，官方 picker 同样显示） |
 | s | AI 总结：后台 `claude -p` 分析该会话（核心目标/进度%/分支状态/问题清单），结果存 `~/.ccs/summaries.json` 并显示在详情栏顶部；异步不阻塞——切换会话不打断 |
-| r | 重扫 |
+| F5 或 Ctrl+L | 重扫（终端应用会截留 Cmd 系按键，故不用 Cmd+R） |
 | Esc | 永远是「返回」：关弹层 → 清搜索/过滤 → 退出归档区 |
 | q | 退出 |
 
