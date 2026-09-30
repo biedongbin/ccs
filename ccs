@@ -547,8 +547,13 @@ def harvest_summaries(max_age: float = 120):
 
 DEFAULT_RESUME_CMD = "claude --resume {sid}"
 
+def resume_cmd_full(cmd: str) -> str:
+    """用户只填基础命令（如 cc）：不含 {sid} 时系统自动追加 --resume {sid}；
+    已含 {sid} 的完整模板原样兼容（老配置不破）。"""
+    return cmd if "{sid}" in cmd else cmd.rstrip() + " --resume {sid}"
+
 def build_direct_argv(m: SessionMeta, cmd: str = DEFAULT_RESUME_CMD):
-    return _shlex.split(cmd.format(sid=m.sid))
+    return _shlex.split(resume_cmd_full(cmd).format(sid=m.sid))
 
 def build_resume_argv(m: SessionMeta, cmd: str = DEFAULT_RESUME_CMD) -> list:
     """resume_cmd 是 shell 命令：一律交用户交互 shell 执行——函数/alias/内嵌环境变量与终端一致。
@@ -556,7 +561,7 @@ def build_resume_argv(m: SessionMeta, cmd: str = DEFAULT_RESUME_CMD) -> list:
     if os.name == "nt":                      # ponytail: Windows 无 shell 函数语义，直 execvp，够用
         return build_direct_argv(m, cmd=cmd)
     sh = os.environ.get("SHELL") or "/bin/sh"
-    return [sh, "-ic", cmd.format(sid=m.sid)]
+    return [sh, "-ic", resume_cmd_full(cmd).format(sid=m.sid)]
 
 class AppState:
     def __init__(self, sessions, archive_view=False):
@@ -901,7 +906,8 @@ def run_config_plain(cfg: dict, first_run: bool) -> None:
     raw = input(f"Theme [1-{len(themes)}, Enter=keep]: ").strip()
     if raw.isdigit() and 1 <= int(raw) <= len(themes):
         cfg["theme"] = themes[int(raw) - 1]
-    print(f"resume_cmd [{cfg.get('resume_cmd', DEFAULT_RESUME_CMD)}]: ", end="")
+    print(f"resume_cmd [{cfg.get('resume_cmd', DEFAULT_RESUME_CMD).replace(' --resume {sid}', '')}]"
+          " (auto appends --resume {sid}): ", end="")
     raw = input().strip()
     if raw:
         cfg["resume_cmd"] = raw
@@ -913,9 +919,10 @@ _CONFIG_DESCS = {
             "fr 法语 / de 德语 / ru 俄语 / pt 葡语 / it 意语。影响菜单、提示、帮助行与错误文案。保存后下次启动生效。",
     "theme": "配色主题（仅前景色，背景跟随终端）。default 青 / ocean 蓝 / dracula 紫 / mono 无色。"
              "深色终端建议 default 或 dracula，浅色终端建议 ocean 或 mono。自定义调色板自动追加在列表末尾。",
-    "resume_cmd": "恢复命令模板。按 Enter 恢复会话时，整条命令交给你的交互 shell（$SHELL -ic）执行——"
-                  "shell 函数、alias、内嵌环境变量与你终端里的行为完全一致（例如 zshrc 里包装的 cc()）。"
-                  "{sid} 会替换为目标会话 ID，留空恢复默认。示例：claude --dangerously-skip-permissions --resume {sid}",
+    "resume_cmd": "恢复命令。只需填基础命令（如 cc 或 claude --dangerously-skip-permissions）——"
+                  "按 Enter 恢复时系统自动追加 --resume {sid} 并替换为会话 ID；已含 {sid} 的完整模板同样兼容。"
+                  "整条命令交给你的交互 shell（$SHELL -ic）执行，函数、alias、内嵌环境变量与终端行为一致"
+                  "（例如 zshrc 里包装的 cc()）。",
     "custom": "自定义调色板（本页只读）。在 ~/.ccs/config.json 中按 "
               'JSON 对象添加，形如 {"nord": ["cyan", 114]}：每条为 [强调色, 消息色]，'
               "颜色取 8 色名（black red green yellow blue magenta cyan white）或 0-255 整数，非法条目静默忽略。"
@@ -1084,9 +1091,9 @@ def _config_tui(stdscr, cfg: dict):
                     cfg["theme"] = v
             elif key == "resume_cmd":
                 _safe_add(stdscr, H - 2, 0, " " * (W - 1), curses.A_DIM)
-                _safe_add(stdscr, H - 2, 1, "resume_cmd:", msg_attr)
-                v = _config_input(stdscr, H - 2, 13, W,
-                                  cfg.get("resume_cmd", DEFAULT_RESUME_CMD))   # 预填现值
+                _safe_add(stdscr, H - 2, 1, "resume_cmd + --resume {sid}:", msg_attr)
+                v = _config_input(stdscr, H - 2, 31, W,
+                                  cfg.get("resume_cmd", DEFAULT_RESUME_CMD).replace(" --resume {sid}", ""))   # 预填基础命令
                 if v is None:
                     msg = "已取消 cancelled"
                 elif v.strip():

@@ -475,6 +475,11 @@ def test_resume_cmd_custom():
     assert a == ["claude", "--dangerously-skip-permissions", "--resume", "s9"]
     b = ccs.build_direct_argv(m, cmd="claude -p {sid}")
     assert b == ["claude", "-p", "s9"]
+    c = ccs.build_direct_argv(m, cmd="cc")                      # 只填基础命令 → 自动追加
+    assert c == ["cc", "--resume", "s9"]
+    assert ccs.resume_cmd_full("cc --resume {sid}") == "cc --resume {sid}"   # 完整模板兼容
+    assert ccs.resume_cmd_full("claude --dangerously-skip-permissions") == \
+        "claude --dangerously-skip-permissions --resume {sid}"
 
 def test_resume_shell_function_fallback():
     """resume_cmd 一律交用户交互 shell：函数/alias（可能遮蔽同名二进制）与终端行为一致。"""

@@ -131,7 +131,7 @@ A session's directory is the directory Claude Code was launched in — recovered
 |---|---|---|
 | `lang` | `zh` | UI language: `zh en ja ko es fr de ru pt it` |
 | `theme` | `default` | `default` (cyan) · `ocean` (blue) · `dracula` (magenta) · `mono` (no color) |
-| `resume_cmd` | `claude --resume {sid}` | Resume command template; `{sid}` is replaced with the session id and executed by `Enter`. Edit this file directly or set interactively via `ccs --config`. Example: `"claude --dangerously-skip-permissions --resume {sid}"` |
+| `resume_cmd` | `claude --resume {sid}` | Resume command: fill in just the base command (e.g. `cc`) — `--resume {sid}` is appended automatically; full templates containing `{sid}` also work. Executed via your interactive shell (functions/aliases apply). Example: `"claude --dangerously-skip-permissions"` |
 | `custom` | — | user-defined palettes, see below |
 
 ### Custom themes

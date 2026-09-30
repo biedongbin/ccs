@@ -131,7 +131,7 @@ ccs --check    # 非交互：统计会话/项目/归档数与最新标题
 |---|---|---|
 | `lang` | `zh` | 界面语言：`zh en ja ko es fr de ru pt it` |
 | `theme` | `default` | `default`（青）· `ocean`（蓝）· `dracula`（紫）· `mono`（无色） |
-| `resume_cmd` | `claude --resume {sid}` | 恢复命令模板，`{sid}` 替换为会话 ID，`Enter` 执行；可直接编辑本文件或 `ccs --config` 交互设置。示例：`"claude --dangerously-skip-permissions --resume {sid}"` |
+| `resume_cmd` | `claude --resume {sid}` | 恢复命令：只填基础命令（如 `cc`），恢复时系统自动追加 `--resume {sid}`；已含 `{sid}` 的完整模板同样兼容。整条交交互 shell 执行（函数/alias 生效）。示例：`"claude --dangerously-skip-permissions"` |
 | `custom` | — | 自定义调色板，见下 |
 
 ### 自定义主题
