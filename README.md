@@ -45,9 +45,14 @@ That's it. Pick a session, hit `Enter`, and your terminal is taken over in place
 
 ## Install
 
-One-liner (macOS / Linux, no clone needed):
+Three channels, same Python core — pick whichever fits your toolchain:
 
 ```bash
+# npm (needs Node + python3; npx works without installing)
+npx claude-code-sessions
+npm i -g claude-code-sessions
+
+# curl one-liner (macOS / Linux, no Node needed)
 curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
 ```
 
@@ -160,7 +165,7 @@ Power users can also hand-edit `~/.ccs/config.json`: `{"custom": {"nord": ["cyan
 ## Tests
 
 ```bash
-python3 test_ccs.py    # assert-style, no framework, 46 checks
+python3 test_ccs.py    # assert-style, no framework, 47 checks
 ```
 
 ## License

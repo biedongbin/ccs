@@ -45,9 +45,14 @@ ccs
 
 ## 安装
 
-一键安装（macOS / Linux，无需 clone）：
+三种方式任选（内容同一 Python 内核，按发行渠道按需选择）：
 
 ```bash
+# npm（需 Node 与 python3；npx 免安装直接跑）
+npx claude-code-sessions
+npm i -g claude-code-sessions
+
+# curl 一键（macOS / Linux，无需 Node）
 curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
 ```
 
@@ -160,7 +165,7 @@ ccs --check    # 非交互：统计会话/项目/归档数与最新标题
 ## 测试
 
 ```bash
-python3 test_ccs.py    # assert 式，无框架，46 项检查
+python3 test_ccs.py    # assert 式，无框架，47 项检查
 ```
 
 ## 许可

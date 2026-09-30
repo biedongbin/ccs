@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 .claude/
 docs/
+ts/ccs
+ts/README.md
+*.tgz
+node_modules/

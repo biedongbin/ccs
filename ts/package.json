@@ -1,0 +1,34 @@
+{
+  "name": "claude-code-sessions",
+  "version": "1.0.0",
+  "description": "Cross-directory manager for Claude Code sessions: browse/search/archive/resume — Python-core npm distribution",
+  "license": "MIT",
+  "author": "biedongbin",
+  "homepage": "https://github.com/biedongbin/ccs#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/biedongbin/ccs.git"
+  },
+  "keywords": [
+    "claude-code",
+    "claude",
+    "sessions",
+    "tui",
+    "terminal"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "files": [
+    "bin",
+    "ccs",
+    "README.md"
+  ],
+  "scripts": {
+    "prepublishOnly": "node -e \"require('fs').copyFileSync('../ccs','ccs');require('fs').copyFileSync('../README.md','README.md')\"",
+    "test": "node test/spawn.test.js"
+  },
+  "bin": {
+    "ccs": "bin/ccs.js"
+  }
+}
