@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-/* ccs npm 壳：定位 python3（Windows 回退 python），spawn 捆绑的 ccs。 */
-const { spawnSync } = require("child_process");
-const path = require("path");
-const fs = require("fs");
+/* ccs npm 壳：定位 python3（Windows 回退 python），spawn 捆绑的 ccs。ESM。 */
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
-const SCRIPT = path.join(__dirname, "..", "ccs");
+const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "ccs");
 
 function pythonCmd() {
   const cands = process.platform === "win32" ? ["python", "python3"] : ["python3", "python"];
@@ -16,7 +16,5 @@ function pythonCmd() {
   process.exit(1);
 }
 
-const r = spawnSync(pythonCmd(), [SCRIPT, ...process.argv.slice(2)], {
-  stdio: "inherit",
-});
+const r = spawnSync(pythonCmd(), [SCRIPT, ...process.argv.slice(2)], { stdio: "inherit" });
 process.exit(r.status ?? 1);

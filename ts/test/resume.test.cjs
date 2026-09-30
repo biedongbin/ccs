@@ -53,16 +53,14 @@ ok("argv SHELL 缺省 /bin/sh", JSON.stringify(buildResumeArgv("claude --resume 
   JSON.stringify(["/bin/sh", "-ic", "claude --resume s1"]));
 ok("shlex 拆分", JSON.stringify(splitLikeShlex('claude -p "a b"  --x')) ===
   JSON.stringify(["claude", "-p", "a b", "--x"]));
-// win32 分支：stub platform 后重新加载模块
+// win32 分支：子进程 ESM 桩（dist 为 ESM，new Function 不可用）
 const resSrc = fs.readFileSync(path.join(ROOT, "dist", "resume.js"), "utf-8");
-const mod = { exports: {} };
-const fn = new Function("process", "require", "exports", "module",
-  resSrc.replace(/process\.platform/g, '"win32"'));
-const fakeProc = { ...process, platform: "win32", env: { ...process.env } };
-const { createRequire } = require("module");
-fn(fakeProc, createRequire(path.join(ROOT, "dist", "resume.js")), mod.exports, mod);
-ok("win32 直拆直执行", JSON.stringify(mod.exports.buildResumeArgv("cc --resume {sid}", "s2")) ===
-  JSON.stringify(["cc", "--resume", "s2"]));
+const stubCode = 'Object.defineProperty(process,"platform",{value:"win32"});\n'
+  + resSrc.replace(/from "(\.\/[^"]+)"/g, (_m, p) => `from "${path.join(ROOT, "dist", p)}"`)
+  + '\nconsole.log(JSON.stringify(buildResumeArgv("cc --resume {sid}", "s2")));';
+const stubR = spawnSync(process.execPath, ["--input-type=module", "-e", stubCode], { encoding: "utf8" });
+ok("win32 直拆直执行", stubR.status === 0
+  && JSON.stringify(JSON.parse(stubR.stdout.trim())) === JSON.stringify(["cc", "--resume", "s2"]));
 
 // execResumeAt：真执行 echo，验证 chdir + 退出码透传
 const proj = path.join(os.tmpdir(), "ccs_unit_proj");

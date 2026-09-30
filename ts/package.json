@@ -1,7 +1,7 @@
 {
   "name": "claude-code-sessions",
   "version": "1.0.0",
-  "description": "Cross-directory manager for Claude Code sessions: browse/search/archive/resume — Python-core npm distribution",
+  "description": "Cross-directory manager for Claude Code sessions: browse/search/archive/resume \u2014 Python-core npm distribution",
   "license": "MIT",
   "author": "biedongbin",
   "homepage": "https://github.com/biedongbin/ccs#readme",
@@ -26,15 +26,23 @@
   ],
   "scripts": {
     "build": "tsc && node -e \"require('fs').copyFileSync('src/eaw.json','dist/eaw.json')\"",
-    "test": "npm run -s build && node test/parity.js",
-    "test:shell": "node test/spawn.test.js",
-    "test:unit": "node test/resume.test.js && node test/summary.test.js"
+    "test": "npm run -s build && node test/parity.cjs",
+    "test:shell": "node test/spawn.test.cjs",
+    "test:unit": "node test/resume.test.cjs && node test/summary.test.cjs && node test/tui.test.cjs",
+    "e2e": "npm run -s build && python3 test/pty_e2e.py"
   },
   "bin": {
     "ccs": "bin/ccs.js"
   },
   "devDependencies": {
     "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
+    "ink-testing-library": "^2.1.0",
     "typescript": "^5.9.3"
-  }
+  },
+  "dependencies": {
+    "ink": "^4.4.1",
+    "react": "^18.3.1"
+  },
+  "type": "module"
 }

@@ -5,8 +5,8 @@
 import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
-import type { SessionMeta } from "./parse";
-import { ccsHome } from "./config";
+import type { SessionMeta } from "./parse.js";
+import { ccsHome } from "./config.js";
 
 /** sid -> {proc, out, title}；随进程退出即弃，孤儿输出由 harvest 兜底。 */
 export interface Job {

@@ -6,7 +6,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 const EAW: { wide: number[][]; combining: number[][] } =
-  JSON.parse(fs.readFileSync(path.join(__dirname, "eaw.json"), "utf8"));
+  JSON.parse(fs.readFileSync(new URL("./eaw.json", import.meta.url), "utf8"));   // ESM 无 __dirname
 
 function inRanges(ranges: number[][], cp: number): boolean {
   let lo = 0;

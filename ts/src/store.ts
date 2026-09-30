@@ -4,7 +4,7 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { encodedDirName } from "./parse";
+import { encodedDirName } from "./parse.js";
 
 /** Python paths()：env 缝隙 + 默认家目录。 */
 export function paths(): [string, string] {

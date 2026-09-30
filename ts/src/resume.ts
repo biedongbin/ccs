@@ -6,8 +6,8 @@
  */
 import { spawnSync } from "child_process";
 import * as fs from "fs";
-import type { SessionMeta } from "./parse";
-import { resumeCmdFull } from "./config";
+import type { SessionMeta } from "./parse.js";
+import { resumeCmdFull } from "./config.js";
 
 /** Windows 分支：shlex 风格拆分（与 Python os.name=="nt" 分支一致）。 */
 export function splitLikeShlex(s: string): string[] {
