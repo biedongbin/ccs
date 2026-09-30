@@ -25,7 +25,6 @@ export async function runConfigPlain(home = ""): Promise<void> {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const ask = (q: string) => new Promise<string>((r) => rl.question(q, (a) => r(a.trim())));
   console.log("== ccs 首次配置 / first-run setup ==");
-  const langs = T("lang_names") || "zh en ja ko es fr de ru pt it";
   console.log("  1) 中文 (zh)  2) English (en)  3) 日本語 (ja)  4) 한국어 (ko)  5) Español (es)");
   console.log("  6) Français (fr)  7) Deutsch (de)  8) Русский (ru)  9) Português (pt)  10) Italiano (it)");
   const raw = await ask(`Language [1-10, Enter=zh]: `);

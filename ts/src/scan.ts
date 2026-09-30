@@ -39,7 +39,7 @@ export function doRename(m: SessionMeta, name: string): boolean {
 }
 
 /** 剪贴板：pbcopy(macOS) → clip.exe(win)。返回 null=无工具。 */
-export function copyBackend(): { argv: string[]; encoding: BufferEncoding } | null {
+export function copyBackend(): { argv: string[]; encoding: BufferEncoding } | null {  // encoding "utf-16le" 时消费端补 LE BOM（对齐 Python utf-16）
   const which = (c: string) => {
     const dirs = (process.env.PATH || "").split(path.delimiter);
     return dirs.some((d) => {

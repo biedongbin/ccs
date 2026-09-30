@@ -190,7 +190,7 @@ export function CcsApp(props: Props) {
       else if (!startSummary(cur)) setMsg(T("sum_fail", { t: cur.title.slice(0, 24) }));
       else { setMsg(T("sum_started", { t: cur.title.slice(0, 24) })); keepMsg.current = true; }
     }
-    else if ((key.ctrl && input === "l") || input === "\x1b[15~") { setSessions(scanAll()); setCursor((c) => Math.min(c, Math.max(0, rows.length ? n - 1 : 0))); }
+    else if ((key.ctrl && input === "l") || input === "\x1b[15~") { setSessions(scanAll()); setCursor((c) => Math.min(c, Math.max(0, n - 1))); }
     else if (input === "a" && cur && !archiveView) { try { doArchive(cur, ccsHome()); setSessions(scanAll()); setCursor((c) => Math.min(c, Math.max(0, n - 2))); } catch (e) { setMsg(T("op_fail", { e: String(e) })); } }
     else if (input === "u" && cur && archiveView) { try { doRestore(cur, paths()[0]); setSessions(scanAll()); setCursor((c) => Math.min(c, Math.max(0, n - 2))); } catch (e) { setMsg(T("op_fail", { e: String(e) })); } }
     else if (input === "d" && cur) { try { doTrash(cur, ccsHome()); setSessions(scanAll()); setCursor((c) => Math.min(c, Math.max(0, n - 2))); } catch (e) { setMsg(T("op_fail", { e: String(e) })); } }
@@ -200,7 +200,7 @@ export function CcsApp(props: Props) {
       else {
       const r = execResume(cur, props.resumeCmd);
       if (r.needDir) { setBuf(""); setMode({ k: "dir" }); }
-      else process.exit(r.status ?? 0);
+      else { process.stdout.write("\x1b[2J\x1b[H"); process.exit(r.status ?? 0); }
       }
     }
     else if (key.escape) { setQuery(""); setProject(null); setArchiveView(false); setCursor(0); }
@@ -210,19 +210,25 @@ export function CcsApp(props: Props) {
     if (!text) { setMsg(T("no_copy")); return; }
     const b = copyBackend();
     if (!b) { setMsg(T("no_copy_tool")); return; }
-    const r = spawnSync(b.argv[0], b.argv.slice(1), { input: Buffer.from(text, b.encoding) });
+    const body = b.encoding === "utf-16le"
+      ? Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(text, b.encoding)])  // LE BOM（对齐 Python utf-16）
+      : Buffer.from(text, b.encoding);
+    const r = spawnSync(b.argv[0], b.argv.slice(1), { input: body });
     setMsg(r.status === 0 ? T("copied", { n: text.length }) : T("no_copy"));
   }
 
-  function pickerItems(): [string, string | null][] {               // (显示名, cwd|null=全部)
-    const agg = new Map<string, number>();
+  function pickerItems(): [string, string | null, number, number][] {   // (显示名, cwd|null=全部, 会话数, 最新mtime)
+    const agg = new Map<string, [number, number]>();
     for (const m of sessions) {
       if (m.archived !== archiveView) continue;
-      const t = agg.get(m.cwd) || 0;
-      agg.set(m.cwd, Math.max(t, m.mtime));
+      const t = agg.get(m.cwd) || [0, 0];
+      agg.set(m.cwd, [t[0] + 1, Math.max(t[1], m.mtime)]);
     }
-    const rowsA = [...agg.entries()].sort((a, b) => b[1] - a[1]);
-    return [[T("picker_all"), null], ...rowsA.map(([c]) => [pth.basename(c) || c, c] as [string, string | null])];
+    const rowsA = [...agg.entries()].sort((a, b) => b[1][1] - a[1][1]);
+    const total = [...agg.values()].reduce((s, v) => s + v[0], 0);
+    const newest = rowsA.length ? rowsA[0][1][1] : 0;
+    return [[T("picker_all"), null, total, newest],
+            ...rowsA.map(([c, v]) => [pth.basename(c) || c, c, v[0], v[1]] as [string, string | null, number, number])];
   }
 
   // ---- 详情行（Python _detail_lines 等价：字段4行 + bar + AI总结/首问/末答，mdLines 渲染） ----
@@ -279,17 +285,17 @@ export function CcsApp(props: Props) {
       <Box flexDirection="column" height={H}>
         <Box borderStyle="round" flexDirection="column" paddingX={1}>
           <Text bold color={acc.accent}>{T("picker_t")}</Text>
-          {items.map(([name, cwd], i) => (
+          {items.map(([name, cwd, cnt, mt], i) => (
             <Box key={String(cwd) + i}>
               <Text backgroundColor={i === pickerIdx ? acc.accent : undefined}
                 color={i === pickerIdx ? "black" : undefined}
                 bold={i === pickerIdx}>
                 {(i === pickerIdx ? "▸ " : "  ") + name + (cwd && cwd === project ? " *" : "")}
               </Text>
+              <Text dimColor>{String(cnt).padStart(4)}  {relTime(mt, Date.now() / 1000)}</Text>
             </Box>
           ))}
         </Box>
-        <Text dimColor>{T("picker_all") === items[0][0] ? " j/k select · Enter confirm · Esc cancel" : ""}</Text>
       </Box>
     );
   }

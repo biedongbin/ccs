@@ -186,6 +186,22 @@ export function parseJsonl(p: string, budget = 65536): Parsed {
           }
           if (firstUser) break;
         }
+        if (carry.length && !firstUser) {          // 末段无尾换行也过一遍（Python 逐行迭代语义）
+          let o: any;
+          try {
+            o = JSON.parse(carry.toString("utf8"));
+          } catch {
+            o = null;
+          }
+          if (o && typeof o === "object" && !Array.isArray(o)
+              && o.type === "user" && !o.isSidechain) {
+            const txt = textOf(o.message?.content).trim();
+            if (txt && !isInternal(txt)) {
+              firstUser = txt;
+              sawContent = true;
+            }
+          }
+        }
       } finally {
         fs.closeSync(fd);
       }

@@ -42,7 +42,12 @@ ok("doRename true", doRename(target, "新名字") === true);
 ok("mtime preserved after rename (ms tol)", Math.abs(fs.statSync(A).mtimeMs - mt0) < 5);
 metas = scanAll();
 ok("custom title wins", metas.find((m) => m.sid === "sid-a").title === "新名字");
-ok("mtime order unchanged (no jump-to-top)", metas[metas.length - 1].sid === "sid-a" || metas[0].mtime >= metas[1].mtime);
+{
+  const idx = metas.findIndex((m) => m.sid === "sid-a");
+  const minM = Math.min(...metas.map((m) => m.mtime));
+  const mine = metas[idx].mtime;
+  ok("no jump-to-top: renamed stays oldest", idx === metas.length - 1 && Math.abs(mine - minM) < 1e-6);
+}
 
 // 3. 帮助行段折行（同键说明不拆行）
 const { hardWrap } = require("../dist/width");

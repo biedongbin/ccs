@@ -63,6 +63,8 @@ export function userThemes(cfg: CcsConfig): Record<string, [number, number]> {
     if (Array.isArray(v) && v.length === 2) {
       for (const c of v) {
         if (typeof c === "string" && c in COLOR_NAMES) pair.push(COLOR_NAMES[c]);
+        // ponytail: Python isinstance(int) 另拒 "5.0"（json 得 float）；TS number 无 int/float 之分，
+        // 仅手编 "5.0" 字面量这一不可达输入偏离，接受
         else if (typeof c === "number" && Number.isInteger(c) && c >= 0 && c <= 255) pair.push(c);
       }
     }
