@@ -25,9 +25,10 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"require('fs').copyFileSync('src/eaw.json','dist/eaw.json')\"",
     "test": "npm run -s build && node test/parity.js",
-    "test:shell": "node test/spawn.test.js"
+    "test:shell": "node test/spawn.test.js",
+    "test:unit": "node test/resume.test.js && node test/summary.test.js"
   },
   "bin": {
     "ccs": "bin/ccs.js"

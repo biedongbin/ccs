@@ -81,5 +81,97 @@ for (const [name, c] of Object.entries(cases)) {
   n++;
 }
 
+// ---- width 对拍 ----
+const W = require("../dist/width.js");
+{
+  let wn = 0;
+  for (const [k, v] of Object.entries(BASE.width.dw)) {
+    assert.strictEqual(W.dw(eval(`(${k})`)), v, `dw ${k}`);
+    wn++;
+  }
+  for (const [k, v] of Object.entries(BASE.width.cut)) {
+    assert.strictEqual(W.cut(v.args[0], v.args[1]), v.ret, `cut #${k}`);
+    wn++;
+  }
+  for (const [k, v] of Object.entries(BASE.width.pad)) {
+    assert.strictEqual(W.pad(v.args[0], v.args[1]), v.ret, `pad #${k}`);
+    wn++;
+  }
+  for (const [k, v] of Object.entries(BASE.width.hard_wrap)) {
+    assert.deepStrictEqual(W.hardWrap(v.args[0], v.args[1]), v.ret, `hard_wrap #${k}`);
+    wn++;
+  }
+  for (const [k, v] of Object.entries(BASE.width.md_lines)) {
+    assert.deepStrictEqual(W.mdLines(v.args[0], v.args[1]), v.ret, `md_lines #${k}`);
+    wn++;
+  }
+  for (const [k, v] of Object.entries(BASE.width.fold_wide)) {
+    assert.deepStrictEqual(W.foldWide(v.args[0], v.args[1]), v.ret, `fold_wide #${k}`);
+    wn++;
+  }
+  n += wn;
+}
+
+// ---- store 对拍：fresh 树同构重放（rename 与 Python shutil.move 同语义）----
+{
+  const S = require("../dist/store.js");
+  const fse = require("fs");
+  const SROOT = "/tmp/ccs_parity_store";
+  fse.rmSync(SROOT, { recursive: true, force: true });
+  const proj = path.join(SROOT, "projects", "-w-projA");
+  const home = path.join(SROOT, "ccs");
+  fse.mkdirSync(proj, { recursive: true });
+  const w = (fn) => {
+    const p = path.join(proj, fn);
+    fse.writeFileSync(p, '{"sessionId": "sid-x"}\n');
+    return p;
+  };
+  const tree = (root) => {
+    const out = [];
+    const walk = (d) => {
+      for (const e of fse.readdirSync(d, { withFileTypes: true })) {
+        const p = path.join(d, e.name);
+        if (e.isDirectory()) walk(p);
+        else out.push(path.relative(root, p));
+      }
+    };
+    walk(root);
+    return out.sort();
+  };
+  let sn = 0;
+  const m1 = w("a.jsonl");
+  const ad = S.doArchive({ path: m1 }, home);
+  assert.strictEqual(ad, BASE.store.archive.dest, "archive dest");
+  assert.deepStrictEqual(tree(SROOT), BASE.store.archive.tree, "archive tree");
+  sn++;
+  const rd = S.doRestore({ path: BASE.store.archive.dest }, proj);
+  assert.strictEqual(rd, BASE.store.restore.dest, "restore dest");
+  assert.deepStrictEqual(tree(SROOT), BASE.store.restore.tree, "restore tree");
+  sn++;
+  assert.strictEqual(S.archiveDest({ path: m1 }, home), BASE.store.archive_dest,
+    "archive_dest");
+  sn++;
+  const tdests = [];
+  for (let i = 0; i < 3; i++) {
+    tdests.push(S.doTrash({ path: w("t.jsonl") }, home));
+  }
+  assert.deepStrictEqual(tdests, BASE.store.trash3.dests, "trash3 dests");
+  assert.deepStrictEqual(tree(SROOT), BASE.store.trash3.tree, "trash3 tree");
+  sn++;
+  const oldP = process.env.CCS_PROJECTS_DIR;
+  const oldH = process.env.CCS_HOME;
+  delete process.env.CCS_PROJECTS_DIR;
+  delete process.env.CCS_HOME;
+  assert.deepStrictEqual(S.paths(), BASE.store.paths_default, "paths default");
+  process.env.CCS_PROJECTS_DIR = "/p";
+  process.env.CCS_HOME = "/h";
+  assert.deepStrictEqual(S.paths(), BASE.store.paths_env, "paths env");
+  if (oldP === undefined) delete process.env.CCS_PROJECTS_DIR; else process.env.CCS_PROJECTS_DIR = oldP;
+  if (oldH === undefined) delete process.env.CCS_HOME; else process.env.CCS_HOME = oldH;
+  sn++;
+  n += sn;
+}
+
 console.log(`parity ${n} groups ALL PASS ` +
-  `(parse=${Object.keys(BASE.parse).length}, ld=${Object.keys(BASE.launch_dir).length}, scan=${BASE.scan.length})`);
+  `(parse=${Object.keys(BASE.parse).length}, ld=${Object.keys(BASE.launch_dir).length}, scan=${BASE.scan.length}, ` +
+  `width, store)`);
