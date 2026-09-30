@@ -477,15 +477,16 @@ def test_resume_cmd_custom():
     assert b == ["claude", "-p", "s9"]
 
 def test_resume_shell_function_fallback():
-    """resume_cmd 首词非可执行文件（shell 函数/alias）→ 交用户交互 shell 执行。"""
+    """resume_cmd 一律交用户交互 shell：函数/alias（可能遮蔽同名二进制）与终端行为一致。"""
     m = ccs.SessionMeta(sid="s9", title="t", cwd="/w", size=1)
     old = os.environ.get("SHELL")
     os.environ["SHELL"] = "/bin/zsh"
     try:
-        a = ccs.build_resume_argv(m, cmd="cc --resume {sid}")       # cc 非可执行文件
+        a = ccs.build_resume_argv(m, cmd="cc --resume {sid}")
         assert a == ["/bin/zsh", "-ic", "cc --resume s9"]
-        b = ccs.build_resume_argv(m, cmd="claude --resume {sid}")   # 可执行文件 → 直exec
-        assert b == ["claude", "--resume", "s9"]
+        b = ccs.build_resume_argv(m, cmd="claude --resume {sid}")
+        assert b == ["/bin/zsh", "-ic", "claude --resume s9"]
+        assert ccs.build_resume_argv(m, cmd="cc --resume {sid}")[0] != "cc"   # 永不 execvp clang
     finally:
         if old is None:
             os.environ.pop("SHELL", None)

@@ -551,12 +551,12 @@ def build_direct_argv(m: SessionMeta, cmd: str = DEFAULT_RESUME_CMD):
     return _shlex.split(cmd.format(sid=m.sid))
 
 def build_resume_argv(m: SessionMeta, cmd: str = DEFAULT_RESUME_CMD) -> list:
-    """resume_cmd 首词是可执行文件 → 直接 execvp；否则（shell 函数/alias）交用户交互 shell。"""
-    a = build_direct_argv(m, cmd=cmd)
-    if _shutil.which(a[0]) is None:
-        sh = os.environ.get("SHELL") or "/bin/sh"
-        return [sh, "-ic", cmd.format(sid=m.sid)]
-    return a
+    """resume_cmd 是 shell 命令：一律交用户交互 shell 执行——函数/alias/内嵌环境变量与终端一致。
+    which 探测不可靠：macOS 自带 /usr/bin/cc（clang），会遮蔽 zshrc 里的同名函数。"""
+    if os.name == "nt":                      # ponytail: Windows 无 shell 函数语义，直 execvp，够用
+        return build_direct_argv(m, cmd=cmd)
+    sh = os.environ.get("SHELL") or "/bin/sh"
+    return [sh, "-ic", cmd.format(sid=m.sid)]
 
 class AppState:
     def __init__(self, sessions, archive_view=False):
