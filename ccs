@@ -923,10 +923,9 @@ _CONFIG_DESCS = {
                   "按 Enter 恢复时系统自动追加 --resume {sid} 并替换为会话 ID；已含 {sid} 的完整模板同样兼容。"
                   "整条命令交给你的交互 shell（$SHELL -ic）执行，函数、alias、内嵌环境变量与终端行为一致"
                   "（例如 zshrc 里包装的 cc()）。",
-    "custom": "自定义调色板（本页只读）。在 ~/.ccs/config.json 中按 "
-              'JSON 对象添加，形如 {"nord": ["cyan", 114]}：每条为 [强调色, 消息色]，'
-              "颜色取 8 色名（black red green yellow blue magenta cyan white）或 0-255 整数，非法条目静默忽略。"
-              "保存后自动出现在 theme 选项与本面板列表中。",
+    "custom": "自定义调色板：Enter 即可创建——输入主题名，选强调色与消息色（各 8 种，带色块预览），"
+              "保存后自动启用；已有主题可一键使用或删除。强调色作用于边框/时间列/选中行底色，"
+              "消息色作用于底部消息行。全程无需手写配置文件。",
 }
 
 def config_rows(cfg: dict):
@@ -966,7 +965,7 @@ def _palette_attrs(cfg):
 
 def _config_picker(stdscr, title: str, options, cur) -> str | None:
     """居中弹层单选：j/k 移动，Enter 确认，Esc 取消。options=[(值,显示)]。"""
-    idx = next((i for i, (v, _s) in enumerate(options) if v == cur), 0)
+    idx = next((i for i, o in enumerate(options) if o[0] == cur), 0)
     while True:
         H, W = stdscr.getmaxyx()          # overlay：不 erase，弹层浮在面板之上（erase 后弹层外空白会被差分丢弃而花屏）
         pw = min(W - 6, 56)
@@ -976,13 +975,15 @@ def _config_picker(stdscr, title: str, options, cur) -> str | None:
         _safe_add(stdscr, py, px + 2, title, curses.A_BOLD)
         vis = ph - 2
         poff = max(0, min(idx - vis + 1, max(0, len(options) - vis)))
-        for j, (v, name) in enumerate(options[poff:poff + vis]):
+        for j, opt in enumerate(options[poff:poff + vis]):
+            v, name = opt[0], opt[1]
+            at = opt[2] if len(opt) > 2 else curses.A_DIM
             yy = py + 1 + j
             selr = poff + j == idx
             if selr:
                 _safe_add(stdscr, yy, px + 1, " " * (pw - 2), curses.A_REVERSE)
             _safe_add(stdscr, yy, px + 2, ("▸ " if selr else "  ") + _cut(name, pw - 6),
-                      curses.A_REVERSE if selr else curses.A_DIM)
+                      (at | curses.A_REVERSE) if selr else at)
         _safe_add(stdscr, H - 1, 0, " j/k 选择 select · Enter 确认 · Esc 取消 ", curses.A_DIM)
         stdscr.refresh()
         try:
@@ -999,6 +1000,19 @@ def _config_picker(stdscr, title: str, options, cur) -> str | None:
             return options[idx][0]
         elif k in ("\x1b", "ESC", "q", "Q"):
             return None
+
+def _color_options():
+    """8 基色选项（值, '██ 色名', 色块属性）——reverse 选中时色块变实底更醒目。"""
+    opts = []
+    for i, c in enumerate(["black", "red", "green", "yellow",
+                           "blue", "magenta", "cyan", "white"]):
+        try:
+            curses.init_pair(10 + i, getattr(curses, "COLOR_" + c.upper()), -1)
+            attr = curses.color_pair(10 + i) | curses.A_BOLD
+        except curses.error:
+            attr = curses.A_BOLD
+        opts.append((c, "██ " + c, attr))
+    return opts
 
 def _config_input(stdscr, y, x, w, initial=""):
     """行内编辑：预填 initial，退格可改，Enter 确认返回 str，Esc 取消返回 None。"""
@@ -1101,8 +1115,36 @@ def _config_tui(stdscr, cfg: dict):
                     msg = "已更新 updated"
                 else:
                     msg = "留空不改动 unchanged"
-            else:
-                msg = "只读——手动编辑 " + config_path()
+            else:                              # 自定义调色板：面板内可视化创建/使用/删除
+                names = list(_user_themes(cfg))
+                pick = _config_picker(stdscr, "自定义调色板 custom",
+                                      [("new", "＋ 新建 create")] + [(n, n) for n in names], "new")
+                if pick == "new":
+                    _safe_add(stdscr, H - 2, 0, " " * (W - 1), 0)
+                    _safe_add(stdscr, H - 2, 1, "主题名 name:", msg_attr)
+                    nm = _config_input(stdscr, H - 2, 15, W)
+                    if nm and nm.strip():
+                        nm = nm.strip()
+                        acc = _config_picker(stdscr, "强调色 accent（边框/选中行）", _color_options(), "cyan")
+                        if acc:
+                            mc = _config_picker(stdscr, "消息色 msg（底部消息行）", _color_options(), "yellow")
+                            if mc:
+                                cu = cfg.get("custom") or {}
+                                cu[nm] = [acc, mc]
+                                cfg["custom"] = cu
+                                cfg["theme"] = nm
+                                msg = f"已创建并启用 {nm}"
+                elif pick:
+                    act = _config_picker(stdscr, pick,
+                                         [("use", "使用 use"), ("del", "删除 delete")], "use")
+                    if act == "use":
+                        cfg["theme"] = pick
+                        msg = f"已启用 {pick}"
+                    elif act == "del":
+                        (cfg.get("custom") or {}).pop(pick, None)
+                        if cfg.get("theme") == pick:
+                            cfg["theme"] = "default"
+                        msg = f"已删除 {pick}"
 
 def run_config(first_run: bool = False) -> None:
     """配置入口：首次启动保持引导式问答；ccs --config 进 curses 面板；无 curses 降级问答。"""

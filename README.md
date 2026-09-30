@@ -136,16 +136,9 @@ A session's directory is the directory Claude Code was launched in — recovered
 
 ### Custom themes
 
-Each entry is `[accent, msg]` — accent drives borders / time column / selection background, msg drives the bottom message line. Colors are 8-color names (`black red green yellow blue magenta cyan white`) or integers `0–255` on 256-color terminals; invalid entries are silently ignored:
+`ccs --config` → custom palettes → create: type a name, pick an accent color and a message color (8 options each, with color-block previews) — saved and enabled in one go. Accent drives borders / time column / selection rows; msg drives the bottom message line. Existing themes can be used or deleted with one key.
 
-```json
-{
-  "theme": "nord",
-  "custom": { "nord": ["cyan", 114] }
-}
-```
-
-Custom themes appear in the `ccs --config` theme menu automatically.
+Power users can also hand-edit `~/.ccs/config.json`: `{"custom": {"nord": ["cyan", 114]}}` — the second slot accepts integers `0–255` on 256-color terminals.
 
 ## Notes
 
