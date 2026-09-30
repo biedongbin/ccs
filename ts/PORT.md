@@ -23,5 +23,11 @@ Node 侧同 fixture 出 JSON，两个 JSON 必须逐字节一致。
 
 ## 现状
 
-- [x] npm 壳包（A 线）：`ts/` 即包根，`bin/ccs.js` spawn 捆绑的 ccs
-- [ ] M1 起逐里程碑推进（每步对拍验收后再进下一块）
+- [x] npm 壳包（A 线）：`ts/` 即包根，`bin/ccs.js` spawn 捆绑的 ccs（现名 `ccs-py`）
+- [x] M1 parse 层对拍（16/6/14 用例逐字段一致）
+- [x] M1.5 渲染宽度层对拍（width 组）
+- [x] M2 归档层对拍（store 组）
+- [x] M3 ink TUI（pty e2e 12/12、逻辑 22 项）
+- [x] M4 resume（$SHELL -ic / needDir / win32 分支）
+- [x] M5 AI 总结（summaries.json 与 Python 互读）
+- [x] M6 npm bin 双入口（ccs=Node 版 / ccs-py=Python 壳）+ README

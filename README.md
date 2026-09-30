@@ -45,14 +45,14 @@ That's it. Pick a session, hit `Enter`, and your terminal is taken over in place
 
 ## Install
 
-Three channels, same Python core — pick whichever fits your toolchain:
+Three channels — the npm package ships a **native Node (ink) build** feature-equal to the Python one, both sharing `~/.ccs/` data:
 
 ```bash
-# npm (needs Node + python3; npx works without installing)
+# npm (Node ≥18; npx works without installing)
 npx claude-code-sessions
-npm i -g claude-code-sessions
+npm i -g claude-code-sessions   # ccs = Node build; ccs-py = Python twin (needs python3)
 
-# curl one-liner (macOS / Linux, no Node needed)
+# curl one-liner (macOS / Linux, pure Python)
 curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
 ```
 

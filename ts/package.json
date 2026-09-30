@@ -1,7 +1,7 @@
 {
   "name": "claude-code-sessions",
   "version": "1.0.0",
-  "description": "Cross-directory manager for Claude Code sessions: browse/search/archive/resume \u2014 Python-core npm distribution",
+  "description": "Cross-directory manager for Claude Code sessions: browse/search/archive/resume — native Node (ink) TUI, Python twin included",
   "license": "MIT",
   "author": "biedongbin",
   "homepage": "https://github.com/biedongbin/ccs#readme",
@@ -21,6 +21,7 @@
   },
   "files": [
     "bin",
+    "dist",
     "ccs",
     "README.md"
   ],
@@ -29,10 +30,12 @@
     "test": "npm run -s build && node test/parity.cjs",
     "test:shell": "node test/spawn.test.cjs",
     "test:unit": "node test/resume.test.cjs && node test/summary.test.cjs && node test/tui.test.cjs",
-    "e2e": "npm run -s build && python3 test/pty_e2e.py"
+    "e2e": "npm run -s build && python3 test/pty_e2e.py",
+    "prepublishOnly": "npm run -s build && node -e \"const fs=require('fs');fs.copyFileSync('../ccs','ccs');fs.copyFileSync('../README.md','README.md')\""
   },
   "bin": {
-    "ccs": "bin/ccs.js"
+    "ccs": "dist/cli.js",
+    "ccs-py": "bin/ccs.js"
   },
   "devDependencies": {
     "@types/node": "^26.6.3",

@@ -45,14 +45,14 @@ ccs
 
 ## 安装
 
-三种方式任选（内容同一 Python 内核，按发行渠道按需选择）：
+三种方式任选（npm 包为 **Node 原生版**，与 Python 版功能等价、共用 `~/.ccs/` 数据）：
 
 ```bash
-# npm（需 Node 与 python3；npx 免安装直接跑）
+# npm（Node ≥18；npx 免安装直接跑）
 npx claude-code-sessions
-npm i -g claude-code-sessions
+npm i -g claude-code-sessions   # ccs = Node 版；ccs-py = Python 壳（需 python3）
 
-# curl 一键（macOS / Linux，无需 Node）
+# curl 一键（macOS / Linux，纯 Python）
 curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
 ```
 
