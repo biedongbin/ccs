@@ -932,6 +932,31 @@ def config_rows(cfg: dict):
         ("custom", "自定义调色板 custom", f"{len(custom)} 项", _CONFIG_DESCS["custom"]),
     ]
 
+def _palette_attrs(cfg):
+    """按 theme 初始化 curses 色对，返回 (border, sel, time, msg)。主 TUI 与配置面板共用。"""
+    PALETTES = {
+        "default": (curses.COLOR_CYAN, curses.COLOR_YELLOW),
+        "ocean":   (curses.COLOR_BLUE, curses.COLOR_GREEN),
+        "dracula": (curses.COLOR_MAGENTA, curses.COLOR_GREEN),
+    }
+    PALETTES.update(_user_themes(cfg))
+    pal = PALETTES.get(cfg.get("theme", "default"), PALETTES["default"])
+    border_attr, sel_attr, time_attr, msg_attr = curses.A_DIM, curses.A_REVERSE, curses.A_DIM, curses.A_BOLD
+    if curses.has_colors() and pal:
+        try:
+            curses.start_color()
+            curses.use_default_colors()
+            curses.init_pair(1, pal[0], -1)
+            curses.init_pair(2, pal[1], -1)
+            curses.init_pair(3, curses.COLOR_BLACK, pal[0])
+            border_attr = curses.color_pair(1) | curses.A_DIM
+            sel_attr = curses.color_pair(3) | curses.A_BOLD
+            time_attr = curses.color_pair(1)
+            msg_attr = curses.color_pair(2)
+        except curses.error:
+            pass
+    return border_attr, sel_attr, time_attr, msg_attr
+
 def _config_picker(stdscr, title: str, options, cur) -> str | None:
     """居中弹层单选：j/k 移动，Enter 确认，Esc 取消。options=[(值,显示)]。"""
     idx = next((i for i, (v, _s) in enumerate(options) if v == cur), 0)
@@ -971,6 +996,7 @@ def _config_picker(stdscr, title: str, options, cur) -> str | None:
 def _config_tui(stdscr, cfg: dict):
     """配置面板主循环：q 保存退出（返回 cfg），Esc 放弃（返回 None）。"""
     curses.curs_set(0)
+    border_attr, sel_attr, lab_attr, msg_attr = _palette_attrs(cfg)
     sel, msg = 0, ""
     while True:
         rows = config_rows(cfg)
@@ -981,17 +1007,18 @@ def _config_tui(stdscr, cfg: dict):
         for i, (key, label, val, _d) in enumerate(rows):
             yy = 2 + i
             if i == sel:
-                _safe_add(stdscr, yy, 1, " " * (W - 2), curses.A_REVERSE)
+                _safe_add(stdscr, yy, 1, " " * (W - 2), sel_attr)
             _safe_add(stdscr, yy, 2, ("▸ " if i == sel else "  ") + label,
-                      curses.A_REVERSE | curses.A_BOLD if i == sel else curses.A_BOLD)
+                      sel_attr if i == sel else (lab_attr | curses.A_BOLD))
             _safe_add(stdscr, yy, 26, _cut(str(val), max(10, W - 28)),
-                      curses.A_REVERSE if i == sel else 0)
+                      sel_attr if i == sel else 0)
         # 详情区：选中项的详细说明
         dt = 2 + len(rows) + 1
-        _box(stdscr, dt, 1, W - 2, H - dt - 2, curses.A_DIM)
+        _box(stdscr, dt, 1, W - 2, H - dt - 2, border_attr)
         for j, ln in enumerate(_md_lines(rows[sel][3], W - 6)[:max(1, H - dt - 4)]):
             _safe_add(stdscr, dt + 1 + j, 3, ln, 0)
-        _safe_add(stdscr, H - 1, 0, (" " if not msg else msg)[:W - 1] if msg else "", curses.A_BOLD)
+        if msg:
+            _safe_add(stdscr, H - 1, 0, msg[:W - 1], msg_attr)
         _safe_add(stdscr, H - 2, 0, " j/k 移动 move · Enter 修改 edit · q 保存退出 save · Esc 放弃 discard ", curses.A_DIM)
         stdscr.refresh()
         try:
@@ -1107,27 +1134,7 @@ def main(argv) -> int:
             picker_idx = cl.index(st.project) if st.project in cl else 0
             picker_open = True
         curses.curs_set(0)
-        PALETTES = {
-            "default": (curses.COLOR_CYAN, curses.COLOR_YELLOW),
-            "ocean":   (curses.COLOR_BLUE, curses.COLOR_GREEN),
-            "dracula": (curses.COLOR_MAGENTA, curses.COLOR_GREEN),
-        }
-        PALETTES.update(_user_themes(cfg))
-        pal = PALETTES.get(cfg.get("theme", "default"), PALETTES["default"])
-        border_attr, sel_attr, time_attr, msg_attr = curses.A_DIM, curses.A_REVERSE, curses.A_DIM, curses.A_BOLD
-        if curses.has_colors() and pal:
-            try:
-                curses.start_color()
-                curses.use_default_colors()
-                curses.init_pair(1, pal[0], -1)
-                curses.init_pair(2, pal[1], -1)
-                curses.init_pair(3, curses.COLOR_BLACK, pal[0])
-                border_attr = curses.color_pair(1) | curses.A_DIM
-                sel_attr = curses.color_pair(3) | curses.A_BOLD
-                time_attr = curses.color_pair(1)
-                msg_attr = curses.color_pair(2)
-            except curses.error:
-                pass
+        border_attr, sel_attr, time_attr, msg_attr = _palette_attrs(cfg)
         while True:
             for sid in [s0 for s0, jb in JOBS.items() if jb["proc"].poll() is not None]:
                 jb = JOBS.pop(sid)
