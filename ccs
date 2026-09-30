@@ -885,9 +885,8 @@ def _user_themes(cfg: dict) -> dict:
             out[name] = (pair[0], pair[1])
     return out
 
-def run_config(first_run: bool = False) -> None:
-    """引导配置语言+主题，写入 ~/.ccs/config.json。选语言前无既定语言，故提示用双语。"""
-    cfg = load_config() if not first_run else {}
+def run_config_plain(cfg: dict, first_run: bool) -> None:
+    """无 curses 环境（Windows 未装补齐包）的顺序问答降级路径。"""
     print("== ccs 首次配置 / first-run setup ==" if first_run else "== ccs 配置 / config ==")
     for i, (code, name) in enumerate(LANG_NAMES, 1):
         mark = "*" if cfg.get("lang", "zh") == code else " "
@@ -895,8 +894,6 @@ def run_config(first_run: bool = False) -> None:
     raw = input(f"Language [1-{len(LANG_NAMES)}, Enter=keep]: ").strip()
     if raw.isdigit() and 1 <= int(raw) <= len(LANG_NAMES):
         cfg["lang"] = LANG_NAMES[int(raw) - 1][0]
-    global _LANG
-    _LANG = cfg.get("lang", "zh")
     themes = THEME_NAMES + [n for n in _user_themes(cfg) if n not in THEME_NAMES]
     for i, name in enumerate(themes, 1):
         mark = "*" if cfg.get("theme", "default") == name else " "
@@ -910,6 +907,149 @@ def run_config(first_run: bool = False) -> None:
         cfg["resume_cmd"] = raw
     save_config(cfg)
     print(f"saved -> {config_path()}")
+
+_CONFIG_DESCS = {
+    "lang": "界面显示语言，共 10 种：zh 中文 / en 英语 / ja 日语 / ko 韩语 / es 西语 / "
+            "fr 法语 / de 德语 / ru 俄语 / pt 葡语 / it 意语。影响菜单、提示、帮助行与错误文案。保存后下次启动生效。",
+    "theme": "配色主题（仅前景色，背景跟随终端）。default 青 / ocean 蓝 / dracula 紫 / mono 无色。"
+             "深色终端建议 default 或 dracula，浅色终端建议 ocean 或 mono。自定义调色板自动追加在列表末尾。",
+    "resume_cmd": "恢复命令模板。按 Enter 恢复会话时，整条命令交给你的交互 shell（$SHELL -ic）执行——"
+                  "shell 函数、alias、内嵌环境变量与你终端里的行为完全一致（例如 zshrc 里包装的 cc()）。"
+                  "{sid} 会替换为目标会话 ID，留空恢复默认。示例：claude --dangerously-skip-permissions --resume {sid}",
+    "custom": "自定义调色板（本页只读）。在 ~/.ccs/config.json 中按 "
+              'JSON 对象添加，形如 {"nord": ["cyan", 114]}：每条为 [强调色, 消息色]，'
+              "颜色取 8 色名（black red green yellow blue magenta cyan white）或 0-255 整数，非法条目静默忽略。"
+              "保存后自动出现在 theme 选项与本面板列表中。",
+}
+
+def config_rows(cfg: dict):
+    """配置面板行：(键, 双语标签, 当前值, 详细说明)。值即当前生效配置，面板默认展示。"""
+    custom = _user_themes(cfg)
+    return [
+        ("lang", "语言 lang", cfg.get("lang", "zh"), _CONFIG_DESCS["lang"]),
+        ("theme", "主题 theme", cfg.get("theme", "default"), _CONFIG_DESCS["theme"]),
+        ("resume_cmd", "恢复命令 resume_cmd", cfg.get("resume_cmd", DEFAULT_RESUME_CMD), _CONFIG_DESCS["resume_cmd"]),
+        ("custom", "自定义调色板 custom", f"{len(custom)} 项", _CONFIG_DESCS["custom"]),
+    ]
+
+def _config_picker(stdscr, title: str, options, cur) -> str | None:
+    """居中弹层单选：j/k 移动，Enter 确认，Esc 取消。options=[(值,显示)]。"""
+    idx = next((i for i, (v, _s) in enumerate(options) if v == cur), 0)
+    while True:
+        H, W = stdscr.getmaxyx()          # overlay：不 erase，弹层浮在面板之上（erase 后弹层外空白会被差分丢弃而花屏）
+        pw = min(W - 6, 56)
+        ph = min(len(options) + 2, H - 4)
+        px, py = (W - pw) // 2, 2
+        _box(stdscr, py, px, pw, ph, curses.A_BOLD)
+        _safe_add(stdscr, py, px + 2, title, curses.A_BOLD)
+        vis = ph - 2
+        poff = max(0, min(idx - vis + 1, max(0, len(options) - vis)))
+        for j, (v, name) in enumerate(options[poff:poff + vis]):
+            yy = py + 1 + j
+            selr = poff + j == idx
+            if selr:
+                _safe_add(stdscr, yy, px + 1, " " * (pw - 2), curses.A_REVERSE)
+            _safe_add(stdscr, yy, px + 2, ("▸ " if selr else "  ") + _cut(name, pw - 6),
+                      curses.A_REVERSE if selr else curses.A_DIM)
+        _safe_add(stdscr, H - 1, 0, " j/k 选择 select · Enter 确认 · Esc 取消 ", curses.A_DIM)
+        stdscr.refresh()
+        try:
+            k = stdscr.get_wch()
+        except curses.error:
+            continue
+        if isinstance(k, int):
+            k = curses.keyname(k).decode()
+        if k in ("j", "KEY_DOWN"):
+            idx = min(idx + 1, len(options) - 1)
+        elif k in ("k", "KEY_UP"):
+            idx = max(idx - 1, 0)
+        elif k in ("\n", "KEY_ENTER"):
+            return options[idx][0]
+        elif k in ("\x1b", "ESC", "q", "Q"):
+            return None
+
+def _config_tui(stdscr, cfg: dict):
+    """配置面板主循环：q 保存退出（返回 cfg），Esc 放弃（返回 None）。"""
+    curses.curs_set(0)
+    sel, msg = 0, ""
+    while True:
+        rows = config_rows(cfg)
+        stdscr.erase()
+        H, W = stdscr.getmaxyx()
+        _safe_add(stdscr, 0, 0, " " * (W - 1), curses.A_REVERSE)
+        _safe_add(stdscr, 0, 1, " ccs 配置 / config  —  " + config_path(), curses.A_REVERSE | curses.A_BOLD)
+        for i, (key, label, val, _d) in enumerate(rows):
+            yy = 2 + i
+            if i == sel:
+                _safe_add(stdscr, yy, 1, " " * (W - 2), curses.A_REVERSE)
+            _safe_add(stdscr, yy, 2, ("▸ " if i == sel else "  ") + label,
+                      curses.A_REVERSE | curses.A_BOLD if i == sel else curses.A_BOLD)
+            _safe_add(stdscr, yy, 26, _cut(str(val), max(10, W - 28)),
+                      curses.A_REVERSE if i == sel else 0)
+        # 详情区：选中项的详细说明
+        dt = 2 + len(rows) + 1
+        _box(stdscr, dt, 1, W - 2, H - dt - 2, curses.A_DIM)
+        for j, ln in enumerate(_md_lines(rows[sel][3], W - 6)[:max(1, H - dt - 4)]):
+            _safe_add(stdscr, dt + 1 + j, 3, ln, 0)
+        _safe_add(stdscr, H - 1, 0, (" " if not msg else msg)[:W - 1] if msg else "", curses.A_BOLD)
+        _safe_add(stdscr, H - 2, 0, " j/k 移动 move · Enter 修改 edit · q 保存退出 save · Esc 放弃 discard ", curses.A_DIM)
+        stdscr.refresh()
+        try:
+            k = stdscr.get_wch()
+        except curses.error:
+            continue
+        if isinstance(k, int):
+            k = curses.keyname(k).decode()
+        key = rows[sel][0]
+        if k in ("j", "KEY_DOWN"):
+            sel = min(sel + 1, len(rows) - 1)
+        elif k in ("k", "KEY_UP"):
+            sel = max(sel - 1, 0)
+        elif k in ("q", "Q"):
+            save_config(cfg)
+            return cfg
+        elif k in ("\x1b", "ESC"):
+            return None
+        elif k in ("\n", "KEY_ENTER"):
+            msg = ""
+            if key == "lang":
+                v = _config_picker(stdscr, "语言 / language",
+                                   [(c, f"{n} ({c})") for c, n in LANG_NAMES], cfg.get("lang", "zh"))
+                if v:
+                    cfg["lang"] = v
+                    global _LANG
+                    _LANG = v
+            elif key == "theme":
+                themes = THEME_NAMES + [n for n in _user_themes(cfg) if n not in THEME_NAMES]
+                v = _config_picker(stdscr, "主题 / theme", [(t, t) for t in themes],
+                                   cfg.get("theme", "default"))
+                if v:
+                    cfg["theme"] = v
+            elif key == "resume_cmd":
+                curses.echo()
+                stdscr.timeout(-1)
+                _safe_add(stdscr, H - 2, 0, " " * (W - 1), curses.A_DIM)
+                _safe_add(stdscr, H - 2, 1, "resume_cmd: ", curses.A_BOLD)
+                stdscr.refresh()
+                try:
+                    s = stdscr.getstr(H - 2, 12, 300).decode("utf-8", "replace").strip()
+                except curses.error:
+                    s = ""
+                curses.noecho()
+                if s:
+                    cfg["resume_cmd"] = s
+                    msg = "已更新 updated"
+            else:
+                msg = "只读——手动编辑 " + config_path()
+
+def run_config(first_run: bool = False) -> None:
+    """配置入口：首次启动保持引导式问答；ccs --config 进 curses 面板；无 curses 降级问答。"""
+    cfg = {} if first_run else load_config()
+    if first_run or curses is None:
+        run_config_plain(cfg, first_run)
+        return
+    if curses.wrapper(_config_tui, cfg) is not None:
+        print(f"saved -> {config_path()}")
 
 def main(argv) -> int:
     if "--check" in argv:
