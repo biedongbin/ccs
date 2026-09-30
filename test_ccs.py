@@ -476,6 +476,22 @@ def test_resume_cmd_custom():
     b = ccs.build_direct_argv(m, cmd="claude -p {sid}")
     assert b == ["claude", "-p", "s9"]
 
+def test_resume_shell_function_fallback():
+    """resume_cmd 首词非可执行文件（shell 函数/alias）→ 交用户交互 shell 执行。"""
+    m = ccs.SessionMeta(sid="s9", title="t", cwd="/w", size=1)
+    old = os.environ.get("SHELL")
+    os.environ["SHELL"] = "/bin/zsh"
+    try:
+        a = ccs.build_resume_argv(m, cmd="cc --resume {sid}")       # cc 非可执行文件
+        assert a == ["/bin/zsh", "-ic", "cc --resume s9"]
+        b = ccs.build_resume_argv(m, cmd="claude --resume {sid}")   # 可执行文件 → 直exec
+        assert b == ["claude", "--resume", "s9"]
+    finally:
+        if old is None:
+            os.environ.pop("SHELL", None)
+        else:
+            os.environ["SHELL"] = old
+
 def test_last_reply_budget():
     """末答预算 500→4000：长回复不再截断成半句。"""
     td, proj, arch = _fake_tree()
