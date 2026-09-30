@@ -16,6 +16,8 @@ const BASE = JSON.parse(
 const LD_ROOT = "/tmp/ccs_parity_ld";
 fs.mkdirSync(path.join(LD_ROOT, "my-project-x", "src"), { recursive: true });
 
+const SKIP_KEYS = new Set(["mtime"]);   // mtime 随 git checkout/重生成而变，不具对拍意义（排序语义已由 scan 列表序覆盖）
+
 function deepEq(a, b, p, errs) {
   if (typeof a === "number" && typeof b === "number") {
     if (Object.is(a, b) || Math.abs(a - b) < 1e-6) return true;
@@ -32,7 +34,10 @@ function deepEq(a, b, p, errs) {
     errs.push(`${p}: keys ${ka} != ${byKey(b)}`);
     return false;
   }
-  for (const k of ka) deepEq(a[k], b[k], `${p}.${k}`, errs);
+  for (const k of ka) {
+    if (SKIP_KEYS.has(k)) continue;
+    deepEq(a[k], b[k], `${p}.${k}`, errs);
+  }
   return true;
 }
 

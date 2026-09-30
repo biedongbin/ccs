@@ -29,4 +29,19 @@ const r2 = spawnSync(process.execPath, [path.join(root, "bin", "ccs.js"), "--che
 assert.strictEqual(r2.status, 1);
 assert(/python3/i.test(r2.stderr), "should hint python3");
 
-console.log("3/3 npm-shape tests passed");
+
+// 4. C1 回归：npm 全局 bin 是 symlink——入口判定必须经 realpath（否则静默哑火）
+{
+  const os = require("os");
+  const link = path.join(os.tmpdir(), "ccs_c1_reg");
+  try { fs.unlinkSync(link); } catch {}
+  fs.symlinkSync(path.join(root, "dist", "cli.js"), link);
+  const r4 = spawnSync(process.execPath, [link, "--check"], {
+    env: { ...process.env, CCS_HOME: "/tmp/ccs_c1_reg", CCS_PROJECTS_DIR: path.join(root, "fixtures", "projects") },
+    encoding: "utf8",
+  });
+  assert.strictEqual(r4.status, 0, "symlink bin exit " + r4.status + ": " + r4.stderr);
+  assert(/会话|sessions/.test(r4.stdout), "symlink bin silent (C1 regression): " + r4.stdout);
+}
+
+console.log("4/4 npm-shape tests passed");

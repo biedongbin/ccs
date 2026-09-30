@@ -47,13 +47,13 @@ export function CcsApp(props: Props) {
   const [project, setProject] = useState<string | null>(null);
   const [cursor, setCursor] = useState(0);
   const [dscroll, setDscroll] = useState(0);
+  const offRef = useRef(0);                         // 左栏滚动滞后窗口（Python _clamp_off），渲染期镜像
   const [lastSid, setLastSid] = useState("");
   const [pager, setPager] = useState<{ open: boolean; off: number }>({ open: false, off: 0 });
   const [pickerIdx, setPickerIdx] = useState(0);
   const [mode, setMode] = useState<Mode>({ k: "list" });
   const [buf, setBuf] = useState("");            // rename/dir/picker 输入缓冲
   const [msg, setMsg] = useState("");
-  const [ticks, setTicks] = useState(0);
   const keepMsg = useRef(false);
   const themeRef = useRef(themeAccents(props.theme, props.custom));
 
@@ -77,12 +77,14 @@ export function CcsApp(props: Props) {
   const cur = n ? rows[Math.min(cursor, n - 1)] : null;
   const H = size.h, W = size.w;
 
-  // 500ms tick：总结任务轮询（Python timeout(500) 等价）
+  // 500ms tick：总结任务轮询。仅在轮询有事件时 setState——空闲零重绘
+  // （Python 版消闪烁同课：timeout(500 if JOBS else -1)）；interval 常驻保活事件循环
   useEffect(() => {
     const iv = setInterval(() => {
       const evts = pollJobs();
+      if (!evts.length) return;
       for (const e of evts) setMsg(e.ok ? T("sum_done", { t: e.title.slice(0, 24) }) : T("sum_fail", { t: e.title.slice(0, 24) }));
-      setTicks((t) => t + 1);
+      setSessions(scanAll());
     }, 500);
     return () => clearInterval(iv);
   }, []);
@@ -91,13 +93,6 @@ export function CcsApp(props: Props) {
   useEffect(() => {
     if (cur && cur.sid !== lastSid) { setDscroll(0); setLastSid(cur.sid); }
   }, [cur, lastSid]);
-
-  const rescan = useCallback((keepView = true) => {
-    const oldCur = cursor;
-    setSessions(scanAll());
-    if (keepView) setCursor((c) => Math.min(c, Math.max(0, scanAll().length - 1)));
-    return oldCur;
-  }, [cursor]);
 
   const helpLs = useMemo(() => hardWrap(T("help"), Math.max(10, W - 1)), [W]);
   const nh = helpLs.length;
@@ -139,7 +134,9 @@ export function CcsApp(props: Props) {
         const d = buf.trim();
         setMode({ k: "list" });
         if (d) {
-          const r = execResumeAt(cur, props.resumeCmd, os.homedir() + (d.startsWith("~") ? d.slice(1) : d));
+          const t = d.startsWith("~") ? os.homedir() + d.slice(1)
+            : pth.isAbsolute(d) ? d : pth.join(os.homedir(), d);
+          const r = execResumeAt(cur, props.resumeCmd, t);
           process.exit(r.needDir ? 1 : (r.status ?? 0));
         }
       }
@@ -181,8 +178,8 @@ export function CcsApp(props: Props) {
     else if (input === "G" && n) setCursor(n - 1);
     else if (input === "/") { setQuery(""); setCursor(0); setMode({ k: "search" }); }
     else if ((key.tab || input === "\t")) { setPickerIdx(0); setMode({ k: "picker" }); }
-    else if (key.pageUp) setDscroll((d) => Math.max(0, d - 1));
-    else if (key.pageDown || input === "J") setDscroll((d) => d + 1);
+    else if (key.pageUp) setDscroll((d) => Math.max(0, d - listH));
+    else if (key.pageDown || input === "J") setDscroll((d) => d + listH);
     else if (input === "K") setDscroll((d) => Math.max(0, d - 1));
     else if (input === "o" && cur) setPager({ open: true, off: 0 });
     else if (input === "y" && cur) copyOut(cur.first_user);
@@ -199,9 +196,12 @@ export function CcsApp(props: Props) {
     else if (input === "d" && cur) { try { doTrash(cur, ccsHome()); setSessions(scanAll()); setCursor((c) => Math.min(c, Math.max(0, n - 2))); } catch (e) { setMsg(T("op_fail", { e: String(e) })); } }
     else if (input === "A") { setArchiveView((v) => !v); setQuery(""); setProject(null); setCursor(0); }
     else if ((key.return || input === "\n") && cur) {
+      if (!cur.sid) { setMsg(T("no_sid")); }
+      else {
       const r = execResume(cur, props.resumeCmd);
       if (r.needDir) { setBuf(""); setMode({ k: "dir" }); }
       else process.exit(r.status ?? 0);
+      }
     }
     else if (key.escape) { setQuery(""); setProject(null); setArchiveView(false); setCursor(0); }
   });
@@ -300,7 +300,9 @@ export function CcsApp(props: Props) {
   const TOP = 1, BOT = H - 2 - nh;
   const listH = BOT - TOP - 1;                     // 表头占一行
   const visH = Math.max(1, listH);
-  const off = Math.max(0, Math.min(cursor, n - visH));
+  const _o0 = offRef.current;                      // 滞后窗口：cursor 在窗内 off 不动，出窗才滚
+  const off = cursor < _o0 ? cursor : cursor >= _o0 + visH ? cursor - visH + 1 : _o0;
+  offRef.current = off;
   const dls = cur ? detailLines(cur, RW - 2) : [];
   const dOff = Math.max(0, Math.min(dscroll, Math.max(0, dls.length - listH)));
 

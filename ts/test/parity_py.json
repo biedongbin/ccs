@@ -69,7 +69,7 @@
       "first_user": "采样窗外的真实首问",
       "kind": "meta",
       "last_reply": "答复",
-      "mtime": 1790757004.5861082,
+      "mtime": 1790786035.300616,
       "path": "/Users/biedongbin/workspace/biedb_tmp/claude_session/ts/fixtures/projects/-w-projA/bigfile.jsonl",
       "sid": "sid-big",
       "size": 78840,
@@ -272,6 +272,22 @@
   "scan": [
     {
       "ai_title": "",
+      "archived": false,
+      "branch": "master",
+      "custom_title": "",
+      "cwd": "/w/projA",
+      "entrypoint": "",
+      "first_user": "采样窗外的真实首问",
+      "last_reply": "答复",
+      "mtime": 1790786035.300616,
+      "path": "/Users/biedongbin/workspace/biedb_tmp/claude_session/ts/fixtures/projects/-w-projA/bigfile.jsonl",
+      "sid": "sid-big",
+      "size": 78840,
+      "summary": "",
+      "title": "采样窗外的真实首问"
+    },
+    {
+      "ai_title": "",
       "archived": true,
       "branch": "master",
       "custom_title": "",
@@ -301,22 +317,6 @@
       "size": 13844,
       "summary": "",
       "title": "问"
-    },
-    {
-      "ai_title": "",
-      "archived": false,
-      "branch": "master",
-      "custom_title": "",
-      "cwd": "/w/projA",
-      "entrypoint": "",
-      "first_user": "采样窗外的真实首问",
-      "last_reply": "答复",
-      "mtime": 1790757004.5861082,
-      "path": "/Users/biedongbin/workspace/biedb_tmp/claude_session/ts/fixtures/projects/-w-projA/bigfile.jsonl",
-      "sid": "sid-big",
-      "size": 78840,
-      "summary": "",
-      "title": "采样窗外的真实首问"
     },
     {
       "ai_title": "",

@@ -82,8 +82,10 @@ export async function main(argv: string[]): Promise<number> {
   return 0;
 }
 
-// ESM 入口判定：import.meta.url 等于本文件 URL
-if (process.argv[1] && import.meta.url === new URL("file://" + process.argv[1]).href) {
+// ESM 入口判定：argv[1] 先 realpath（npm 全局 bin 是 symlink，不还原则不等 → main 静默不执行）
+let _entry = process.argv[1] || "";
+try { _entry = fs.realpathSync(_entry); } catch { /* keep raw */ }
+if (_entry && import.meta.url === new URL("file://" + _entry).href) {
   main(process.argv.slice(2)).then((c) => process.exit(c)).catch((e) => {
     console.error(String(e));
     process.exit(1);

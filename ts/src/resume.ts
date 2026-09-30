@@ -60,5 +60,5 @@ export function execResumeAt(meta: SessionMeta, cmd: string, dir: string): Resum
   if (process.cwd() !== dir) process.chdir(dir);
   const argv = buildResumeArgv(cmd, meta.sid);
   const sub = spawnSync(argv[0], argv.slice(1), { stdio: "inherit" });
-  return { needDir: false, status: sub.status };
+  return { needDir: false, status: sub.error ? 1 : sub.status };   // 坏 SHELL 等 spawn 失败：退出码 1，不假成功
 }
