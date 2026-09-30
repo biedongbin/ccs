@@ -1,0 +1,2 @@
+{"type": "user", "sessionId": "sid-side", "cwd": "/w/projA", "timestamp": "2026-09-01T00:00:00Z", "gitBranch": "master", "message": {"role": "user", "content": "侧链问题不应成为首问"}, "isSidechain": true}
+{"type": "user", "sessionId": "sid-side", "cwd": "/w/projA", "timestamp": "2026-09-01T00:00:00Z", "gitBranch": "master", "message": {"role": "user", "content": "真实首问"}}

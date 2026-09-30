@@ -1,0 +1,3 @@
+{"type": "user", "sessionId": "sid-null", "cwd": "/w/projA", "timestamp": "2026-09-01T00:00:00Z", "gitBranch": "master", "message": {"role": "user", "content": "真实首问"}}
+{"type": "user", "sessionId": "sid-null", "message": null}
+{"type": "assistant", "sessionId": "sid-null", "cwd": "/w/projA", "timestamp": "2026-09-01T00:01:00Z", "message": {"role": "assistant", "content": [{"type": "text", "text": "hi"}]}}

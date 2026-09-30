@@ -1,0 +1,26 @@
+{
+  "real-hyphen-dir": {
+    "encoded": "-Users-biedongbin-workspace-ai-robot-coding",
+    "hint": ""
+  },
+  "real-underscore": {
+    "encoded": "-Users-biedongbin-workspace-biedb-tmp-claude-session",
+    "hint": ""
+  },
+  "hint-disambiguate": {
+    "encoded": "-tmp-ccs-parity-ld-my-project-x",
+    "hint": "/tmp/ccs_parity_ld/my-project-x"
+  },
+  "deleted-dir-join-all": {
+    "encoded": "-Users-biedongbin-nonexistent-abc-def",
+    "hint": ""
+  },
+  "no-leader-dash": {
+    "encoded": "w-projA",
+    "hint": ""
+  },
+  "empty-parts": {
+    "encoded": "-",
+    "hint": ""
+  }
+}

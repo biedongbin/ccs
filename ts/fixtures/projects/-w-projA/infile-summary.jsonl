@@ -1,0 +1,4 @@
+{"type": "summary", "summary": "续会话标题", "leafUuid": "prev-1"}
+{"type": "user", "sessionId": "sid-inf", "cwd": "/w/projA", "timestamp": "2026-09-01T00:00:00Z", "gitBranch": "master", "message": {"role": "user", "content": "第一问"}}
+{"type": "user", "sessionId": "sid-inf", "message": null}
+{"type": "assistant", "sessionId": "sid-inf", "cwd": "/w/projA", "timestamp": "2026-09-01T00:01:00Z", "message": {"role": "assistant", "content": [{"type": "text", "text": "hi"}]}}

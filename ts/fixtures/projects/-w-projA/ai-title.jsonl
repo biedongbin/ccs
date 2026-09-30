@@ -1,0 +1,4 @@
+{"type": "mode"}
+{"type": "ai-title", "aiTitle": "旧标题"}
+{"type": "ai-title", "aiTitle": "新标题赢"}
+{"type": "user", "sessionId": "sid-ai", "cwd": "/w/projA", "timestamp": "2026-09-01T00:00:00Z", "gitBranch": "master", "message": {"role": "user", "content": "问"}}

@@ -1,0 +1,2 @@
+{"type": "custom-title", "customTitle": "官方改名", "sessionId": "sid-ct"}
+{"type": "user", "sessionId": "sid-ct", "cwd": "/w/projA", "timestamp": "2026-09-01T00:00:00Z", "gitBranch": "master", "message": {"role": "user", "content": "首问"}}

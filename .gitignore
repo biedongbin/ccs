@@ -7,3 +7,5 @@ ts/ccs
 ts/README.md
 *.tgz
 node_modules/
+ts/dist/
+

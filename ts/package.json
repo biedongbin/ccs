@@ -17,7 +17,7 @@
     "terminal"
   ],
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "files": [
     "bin",
@@ -25,10 +25,15 @@
     "README.md"
   ],
   "scripts": {
-    "prepublishOnly": "node -e \"require('fs').copyFileSync('../ccs','ccs');require('fs').copyFileSync('../README.md','README.md')\"",
-    "test": "node test/spawn.test.js"
+    "build": "tsc",
+    "test": "npm run -s build && node test/parity.js",
+    "test:shell": "node test/spawn.test.js"
   },
   "bin": {
     "ccs": "bin/ccs.js"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "typescript": "^5.9.3"
   }
 }

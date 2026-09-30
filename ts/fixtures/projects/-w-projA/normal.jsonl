@@ -1,0 +1,2 @@
+{"type": "user", "sessionId": "sid-n", "cwd": "/w/projA", "timestamp": "2026-09-01T00:00:00Z", "gitBranch": "master", "message": {"role": "user", "content": "修复登录bug"}}
+{"type": "assistant", "sessionId": "sid-n", "cwd": "/w/projA", "timestamp": "2026-09-01T00:01:00Z", "message": {"role": "assistant", "content": [{"type": "text", "text": "已修复"}]}}
