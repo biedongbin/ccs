@@ -993,6 +993,36 @@ def _config_picker(stdscr, title: str, options, cur) -> str | None:
         elif k in ("\x1b", "ESC", "q", "Q"):
             return None
 
+def _config_input(stdscr, y, x, w, initial=""):
+    """行内编辑：预填 initial，退格可改，Enter 确认返回 str，Esc 取消返回 None。"""
+    curses.curs_set(1)
+    buf = initial
+    while True:
+        iw = max(8, w - x - 2)
+        _safe_add(stdscr, y, x, " " * iw, 0)
+        _safe_add(stdscr, y, x, _cut(buf, iw), 0)
+        try:
+            stdscr.move(y, x + min(_dw(buf), iw - 1))
+        except curses.error:
+            pass
+        stdscr.refresh()
+        try:
+            k = stdscr.get_wch()
+        except curses.error:
+            continue
+        if isinstance(k, int):
+            k = curses.keyname(k).decode()
+        if k in ("\n", "KEY_ENTER"):
+            curses.curs_set(0)
+            return buf
+        if k in ("\x1b", "ESC"):
+            curses.curs_set(0)
+            return None
+        if k in ("\x7f", "\b", "KEY_BACKSPACE"):
+            buf = buf[:-1]
+        elif len(k) == 1 and ord(k) >= 32:
+            buf += k
+
 def _config_tui(stdscr, cfg: dict):
     """配置面板主循环：q 保存退出（返回 cfg），Esc 放弃（返回 None）。"""
     curses.curs_set(0)
@@ -1053,19 +1083,17 @@ def _config_tui(stdscr, cfg: dict):
                 if v:
                     cfg["theme"] = v
             elif key == "resume_cmd":
-                curses.echo()
-                stdscr.timeout(-1)
                 _safe_add(stdscr, H - 2, 0, " " * (W - 1), curses.A_DIM)
-                _safe_add(stdscr, H - 2, 1, "resume_cmd: ", curses.A_BOLD)
-                stdscr.refresh()
-                try:
-                    s = stdscr.getstr(H - 2, 12, 300).decode("utf-8", "replace").strip()
-                except curses.error:
-                    s = ""
-                curses.noecho()
-                if s:
-                    cfg["resume_cmd"] = s
+                _safe_add(stdscr, H - 2, 1, "resume_cmd:", msg_attr)
+                v = _config_input(stdscr, H - 2, 13, W,
+                                  cfg.get("resume_cmd", DEFAULT_RESUME_CMD))   # 预填现值
+                if v is None:
+                    msg = "已取消 cancelled"
+                elif v.strip():
+                    cfg["resume_cmd"] = v.strip()
                     msg = "已更新 updated"
+                else:
+                    msg = "留空不改动 unchanged"
             else:
                 msg = "只读——手动编辑 " + config_path()
 
