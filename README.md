@@ -80,7 +80,7 @@ Windows specifics:
 ccs            # TUI (shows only the current directory's sessions; empty if none — Esc shows all)
 ccs -a         # start in the archive view
 ccs -r         # ignore cache, full rescan
-ccs --config   # config panel: shows current values, j/k to inspect details, Enter to edit
+ccs --config   # two-page panel: items/values/description list; Enter opens a detail page
 ccs --check    # non-interactive: session/project/archive counts + latest titles
 ```
 
