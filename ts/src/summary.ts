@@ -30,7 +30,7 @@ export function loadSummaries(): Record<string, { text: string; ts: number }> {
 }
 
 export function saveSummaries(sums: Record<string, { text: string; ts: number }>): void {
-  const tmp = summariesPath() + ".tmp";
+  const tmp = `${summariesPath()}.${process.pid}.tmp`;   // R2-2: pid 隔离——双开 ccs 并发写不互踩 rename
   fs.writeFileSync(tmp, JSON.stringify(sums), "utf-8");   // Python: ensure_ascii=False
   fs.renameSync(tmp, summariesPath());
 }

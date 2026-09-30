@@ -242,11 +242,12 @@ export function CcsApp(props: Props) {
   function detailLines(m: SessionMeta, width: number): { text: string; kind: "lab" | "val" | "dim" }[] {
     const sums = loadSummaries();
     const bar = { text: "-".repeat(Math.max(4, width)), kind: "dim" as const };
+    const vw = Math.max(8, width - 6);               // R2-1: 值按栏宽截断——超长 sid/cwd 交 ink 自动换行会溢出次行
     const out: { text: string; kind: "lab" | "val" | "dim" }[] = [
-      { text: pad(T("f_title"), 5) + m.title, kind: "lab" as const },
-      { text: pad(T("f_project"), 5) + tilde(m.cwd), kind: "lab" as const },
-      { text: pad(T("f_branch"), 5) + (m.branch || "-") + `   ${Math.floor(m.size / 1024)} KB`, kind: "lab" as const },
-      { text: pad(T("f_id"), 5) + m.sid, kind: "lab" as const },
+      { text: pad(T("f_title"), 5) + cut(m.title, vw), kind: "lab" as const },
+      { text: pad(T("f_project"), 5) + cut(tilde(m.cwd), vw), kind: "lab" as const },
+      { text: pad(T("f_branch"), 5) + cut(m.branch || "-", vw) + `   ${Math.floor(m.size / 1024)} KB`, kind: "lab" as const },
+      { text: pad(T("f_id"), 5) + cut(m.sid, vw), kind: "lab" as const },
     ];
     const s = sums[m.sid];
     if (s && s.text) {
