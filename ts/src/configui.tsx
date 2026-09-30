@@ -36,7 +36,7 @@ function rows(cfg: CcsConfig): Row[] {
 }
 
 type Page =
-  | { k: "list" } | { k: "lang" } | { k: "theme" } | { k: "resume" } | { k: "custom" }
+  | { k: "list" } | { k: "lang" } | { k: "theme" } | { k: "resume_view" } | { k: "resume" } | { k: "custom" }
   | { k: "name" } | { k: "accent" } | { k: "msgc" };
 
 export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved: boolean) => void }) {
@@ -60,7 +60,7 @@ export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved:
   const customs = userThemes(cfg);
   const rs = rows(cfg);
 
-  useInput((input, key) => {
+  const onKey = (input: string, key: Parameters<Parameters<typeof useInput>[0]>[1]) => {
     if (page.k === "name") {                                   // 新建：主题名（B1 语义：Esc 取消/退格/回车确认）
       if (key.escape) setPage({ k: "custom" });
       else if ((key.return || input === "\n")) {
@@ -69,6 +69,14 @@ export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved:
       }
       else if (key.backspace || key.delete) setBuf((b) => b.slice(0, -1));
       else if (input && !key.ctrl && !key.meta) setBuf((b) => b + input);
+      return;
+    }
+    if (page.k === "resume_view") {                            // R1-3: 两步式——先读说明，Enter 才编辑
+      if (key.escape || input === "q") setPage({ k: "list" });
+      else if (key.return || input === "\n") {
+        setBuf(String(cfg.resume_cmd || DEFAULT_RESUME_CMD).replace(" --resume {sid}", ""));
+        setPage({ k: "resume" });
+      }
       return;
     }
     if (page.k === "resume") {                                 // resume 编辑（预填剥离基础命令）
@@ -96,8 +104,7 @@ export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved:
         if (k === "lang") { setIdx(LANG_NAMES.findIndex(([c]) => c === (cfg.lang || "zh"))); setPage({ k: "lang" }); }
         else if (k === "theme") { setIdx(0); setPage({ k: "theme" }); }
         else if (k === "resume_cmd") {
-          setBuf(String(cfg.resume_cmd || DEFAULT_RESUME_CMD).replace(" --resume {sid}", ""));
-          setPage({ k: "resume" });
+          setPage({ k: "resume_view" });
         }
         else { setIdx(0); setPage({ k: "custom" }); }
       }
@@ -163,6 +170,13 @@ export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved:
       }
       return;
     }
+  };
+  useInput((raw: string, k: Parameters<typeof onKey>[1]) => {
+    if (raw.length > 1 && /^[\x20-\x7e\u00a0-\uffff]+$/.test(raw)) {
+      for (const ch of raw) onKey(ch, k);      // 纯可打印块（连击/粘贴）逐字符分发；含控制字符整包交原逻辑（分发链内 setState 异步，混控制符会读旧状态）
+      return;
+    }
+    onKey(raw, k);
   });
 
   const header = <Text backgroundColor="cyan" color="black" bold>{` ccs 配置 / config — ${configPath()}`}</Text>;
@@ -235,6 +249,18 @@ export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved:
           </Text>
         ))}
         <Text dimColor>{" j/k 选择 · Enter 确认 · Esc 返回"}</Text>
+      </Box>
+    );
+  }
+  if (page.k === "resume_view") {
+    return (
+      <Box flexDirection="column">
+        {detailHead("恢复命令 / resume cmd")}
+        {descBlock(DESC["resume"])}
+        <Text dimColor>{"-".repeat(Math.max(4, W - 4))}</Text>
+        <Text color="green">{"当前完整命令: " + resumeCmdFull(String(cfg.resume_cmd || DEFAULT_RESUME_CMD))}</Text>
+        <Text bold backgroundColor="cyan" color="black">{" ▸ 编辑基础命令 edit base command"}</Text>
+        <Text dimColor>{" Enter 编辑 · Esc 返回列表"}</Text>
       </Box>
     );
   }

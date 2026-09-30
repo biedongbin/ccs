@@ -44,7 +44,7 @@ export function CcsApp(props: Props) {
   const [sessions, setSessions] = useState(props.initialSessions);
   const [archiveView, setArchiveView] = useState(props.archiveView);
   const [query, setQuery] = useState("");
-  const [project, setProject] = useState<string | null>(null);
+  const [project, setProject] = useState<string | null>(pth.resolve(process.cwd()));   // R1-1: 无条件锚定启动目录（Python 等价），Esc 展开全部
   const [cursor, setCursor] = useState(0);
   const [dscroll, setDscroll] = useState(0);
   const offRef = useRef(0);                         // 左栏滚动滞后窗口（Python _clamp_off），渲染期镜像
@@ -98,7 +98,7 @@ export function CcsApp(props: Props) {
   const nh = helpLs.length;
 
   // ---- 键处理（模态拦截：search/rename/dir/picker 各自吃键，B12 防泄漏） ----
-  useInput((input: string, key: { upArrow: boolean; downArrow: boolean; pageUp: boolean; pageDown: boolean; return: boolean; escape: boolean; backspace: boolean; delete: boolean; tab: boolean; ctrl: boolean; meta: boolean }) => {
+  const onKey = (input: string, key: { upArrow: boolean; downArrow: boolean; pageUp: boolean; pageDown: boolean; return: boolean; escape: boolean; backspace: boolean; delete: boolean; tab: boolean; ctrl: boolean; meta: boolean }) => {
     // 移动/滚动键保留状态行，其余键先清空（Python 语义）
     if (!keepMsg.current) {
       const nav = key.upArrow || key.downArrow || key.pageUp || key.pageDown
@@ -204,6 +204,13 @@ export function CcsApp(props: Props) {
       }
     }
     else if (key.escape) { setQuery(""); setProject(null); setArchiveView(false); setCursor(0); }
+  };
+  useInput((raw: string, k: Parameters<typeof onKey>[1]) => {
+    if (raw.length > 1 && /^[\x20-\x7e\u00a0-\uffff]+$/.test(raw)) {
+      for (const ch of raw) onKey(ch, k);      // 纯可打印块（连击/粘贴）逐字符分发；含控制字符整包交原逻辑（分发链内 setState 异步，混控制符会读旧状态）
+      return;
+    }
+    onKey(raw, k);
   });
 
   function copyOut(text: string): void {

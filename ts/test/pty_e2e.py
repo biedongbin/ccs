@@ -16,13 +16,14 @@ def setup():
     shutil.rmtree(HOME, ignore_errors=True)
     shutil.rmtree(PROJ, ignore_errors=True)
     os.makedirs(HOME)
-    enc = os.path.join(PROJ, "-tmp-alpha")
+    os.makedirs("/tmp/ccs_pty_cwd", exist_ok=True)   # 会话 cwd = 启动目录（R1-1 后 TUI 默认锚定 cwd）
+    enc = os.path.join(PROJ, "-tmp-ccs-pty-cwd")   # 编码目录名 = 编码(/tmp/ccs_pty_cwd)，反解才能锚中
     os.makedirs(enc)
     with open(os.path.join(enc, "a.jsonl"), "w") as f:
-        f.write('{"type":"user","sessionId":"sid-a","cwd":"/tmp/alpha","gitBranch":"master","message":{"role":"user","content":"修复登录问题"}}\n')
-        f.write('{"type":"assistant","sessionId":"sid-a","cwd":"/tmp/alpha","message":{"role":"assistant","content":[{"type":"text","text":"' + LONG_REPLY + '"}]}}\n')
+        f.write('{"type":"user","sessionId":"sid-a","cwd":"/tmp/ccs_pty_cwd","gitBranch":"master","message":{"role":"user","content":"修复登录问题"}}\n')
+        f.write('{"type":"assistant","sessionId":"sid-a","cwd":"/tmp/ccs_pty_cwd","message":{"role":"assistant","content":[{"type":"text","text":"' + LONG_REPLY + '"}]}}\n')
     with open(os.path.join(enc, "b.jsonl"), "w") as f:
-        f.write('{"type":"user","sessionId":"sid-b","cwd":"/tmp/alpha","gitBranch":"dev","message":{"role":"user","content":"搜索功能优化任务"}}\n')
+        f.write('{"type":"user","sessionId":"sid-b","cwd":"/tmp/ccs_pty_cwd","gitBranch":"dev","message":{"role":"user","content":"搜索功能优化任务"}}\n')
 
 def run(args, keys=(), wait=1.8, first_wait=2.5):
     setup()
@@ -34,8 +35,8 @@ def run(args, keys=(), wait=1.8, first_wait=2.5):
         os.environ["CCS_PROJECTS_DIR"] = PROJ
         os.environ["TERM"] = "xterm-256color"
         os.environ["ESCDELAY"] = "0"
-        os.chdir(TS)
-        os.execvp("node", ["node", "dist/cli.js"] + args)
+        os.chdir("/tmp/ccs_pty_cwd")
+        os.execvp("node", ["node", TS + "/dist/cli.js"] + args)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", H, W, 0, 0))
     sc = pyte.Screen(W, H)
     st = pyte.ByteStream(sc)
@@ -100,8 +101,8 @@ def q_quit_check():
     pid, fd = pty.fork()
     if pid == 0:
         os.environ.update(CCS_HOME=HOME, CCS_PROJECTS_DIR=PROJ, TERM="xterm-256color", ESCDELAY="0")
-        os.chdir(TS)
-        os.execvp("node", ["node", "dist/cli.js"])
+        os.chdir("/tmp/ccs_pty_cwd")
+        os.execvp("node", ["node", TS + "/dist/cli.js"])
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", H, W, 0, 0))
     time.sleep(2.5)
     while select.select([fd], [], [], 0.3)[0]:
