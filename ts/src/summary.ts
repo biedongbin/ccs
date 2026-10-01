@@ -58,6 +58,7 @@ export function startSummary(m: SessionMeta): boolean {
       stdio: ["ignore", fd, "ignore"],
       cwd: m.cwd || undefined,
     });
+    fs.closeSync(fd);   // R4-1: spawn 已 dup fd，父进程侧必须关闭——否则每次 s 键泄 1 个 fd
     proc.unref();
     JOBS.set(m.sid, { proc, out: outp, title: m.title });
     return true;
