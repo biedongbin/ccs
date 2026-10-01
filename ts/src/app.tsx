@@ -184,7 +184,7 @@ export function CcsApp(props: Props) {
     else if (input === "o" && cur) setPager({ open: true, off: 0 });
     else if (input === "y" && cur) copyOut(cur.first_user);
     else if (input === "Y" && cur) copyOut(cur.last_reply);
-    else if ((input === "r" || input === "R") && cur) { setBuf(cur.title); setMode({ k: "rename" }); }
+    else if ((input === "r" || input === "R") && cur) { setBuf(""); setMode({ k: "rename" }); }   // R3-1: 空输入全名替换（Python 语义；预填现名会拼成"旧+新"）
     else if (input === "s" && cur) {
       if (!cur.sid) setMsg(T("no_sid"));
       else if (!startSummary(cur)) setMsg(T("sum_fail", { t: cur.title.slice(0, 24) }));

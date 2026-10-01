@@ -22,7 +22,7 @@ export function curLang(): string {
 /** 缺翻译回退 en，再缺回退 zh；{x} 占位替换。 */
 export function T(key: string, params?: Record<string, string | number>): string {
   let s = TABLE[cur]?.[key] ?? TABLE.en?.[key] ?? TABLE.zh?.[key] ?? key;
-  if (key === "help") s = s.replace(/F5 /g, "Ctrl+L ");   // Node 版 ink 不透传 F5 转义，实际重扫键是 Ctrl+L（Python 版 F5 正常）
+  if (key === "help") s = s.replace(/F5/g, "Ctrl+L");   // Node 版 ink 不透传 F5 转义，实际重扫键是 Ctrl+L（Python 版 F5 正常）；无空格语言（ja 等）也命中
   if (params) {
     for (const [k, v] of Object.entries(params)) s = s.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
   }
