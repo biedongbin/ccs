@@ -96,8 +96,8 @@ export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved:
     if (page.k === "list") {
       if (input === "q") { saveConfig(cfg); onDone(true); }
       else if (key.escape) onDone(false);
-      else if (input === "j" || key.downArrow) setSel((s) => nav(rs.length)(s + 1));
-      else if (input === "k" || key.upArrow) setSel((s) => nav(rs.length)(s - 1));
+      else if (key.downArrow) setSel((s) => nav(rs.length)(s + 1));
+      else if (key.upArrow) setSel((s) => nav(rs.length)(s - 1));
       else if ((key.return || input === "\n")) {
         setMsg("");
         const k = rs[sel].key;
@@ -112,8 +112,8 @@ export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved:
     }
     if (page.k === "lang") {
       if (key.escape || input === "q" || (key.tab || input === "\t")) setPage({ k: "list" });
-      else if (input === "j" || key.downArrow) setIdx(nav(LANG_NAMES.length)(idx + 1));
-      else if (input === "k" || key.upArrow) setIdx(nav(LANG_NAMES.length)(idx - 1));
+      else if (key.downArrow) setIdx(nav(LANG_NAMES.length)(idx + 1));
+      else if (key.upArrow) setIdx(nav(LANG_NAMES.length)(idx - 1));
       else if ((key.return || input === "\n")) {
         const c = LANG_NAMES[idx][0];
         cfg.lang = c; setCfg({ ...cfg }); setLang(c); setMsg(`✓ ${c}`);
@@ -124,8 +124,8 @@ export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved:
     if (page.k === "theme") {
       const items = [...THEME_NAMES, ...Object.keys(customs), "__new__"];
       if (key.escape || input === "q" || (key.tab || input === "\t")) setPage({ k: "list" });
-      else if (input === "j" || key.downArrow) setIdx(nav(items.length)(idx + 1));
-      else if (input === "k" || key.upArrow) setIdx(nav(items.length)(idx - 1));
+      else if (key.downArrow) setIdx(nav(items.length)(idx + 1));
+      else if (key.upArrow) setIdx(nav(items.length)(idx - 1));
       else if ((key.return || input === "\n")) {
         const pick = items[idx];
         if (pick === "__new__") { setBuf(""); setPage({ k: "name" }); }
@@ -136,8 +136,8 @@ export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved:
     if (page.k === "custom") {
       const items = ["__new__", ...Object.keys(customs)];
       if (key.escape || input === "q" || (key.tab || input === "\t")) setPage({ k: "list" });
-      else if (input === "j" || key.downArrow) setIdx(nav(items.length)(idx + 1));
-      else if (input === "k" || key.upArrow) setIdx(nav(items.length)(idx - 1));
+      else if (key.downArrow) setIdx(nav(items.length)(idx + 1));
+      else if (key.upArrow) setIdx(nav(items.length)(idx - 1));
       else if (input === "d" && items[idx] !== "__new__") {
         const name = items[idx];
         const cu = { ...(cfg.custom as object || {}) };
@@ -155,8 +155,8 @@ export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved:
     if (page.k === "accent" || page.k === "msgc") {
       const names = Object.keys(COLOR_BLOCK);
       if (key.escape || input === "q") setPage({ k: "custom" });
-      else if (input === "j" || key.downArrow) setIdx(nav(names.length)(idx + 1));
-      else if (input === "k" || key.upArrow) setIdx(nav(names.length)(idx - 1));
+      else if (key.downArrow) setIdx(nav(names.length)(idx + 1));
+      else if (key.upArrow) setIdx(nav(names.length)(idx - 1));
       else if ((key.return || input === "\n")) {
         const c = names[idx];
         if (page.k === "accent") { setAcc1(c); setIdx(0); setPage({ k: "msgc" }); }

@@ -69,18 +69,22 @@ def ok(name, cond):
 frame = run([])
 ok("1 首帧·标题两行", "修复登录问题" in frame and "搜索功能优化任务" in frame)
 ok("1 首帧·顶栏计数", "ccs·2" in frame)
-ok("1 首帧·详情栏字段", "ID" in frame and "分支" in frame and "首条提问" in frame)
+ok("1 首帧·详情栏字段", "ID" in frame and "分支" in frame and "首尾指令" in frame)
 ok("1 首帧·帮助行", "Enter恢复" in frame and "q退出" in frame)
 
-# 2. j 移动（游标到第二条，渲染稳定）
-frame = run([], [b"j"])
-ok("2 j 移动", "修复登录问题" in frame and "ccs·2" in frame)
+# 2. ↑↓ 移动（j/k 已移除）；帮助行 ↑↓；首尾指令标签
+frame = run([], [b"\x1b[B"])
+ok("2 ↓ 移动（游标到第二条）", "修复登录问题" in frame and "ccs·2" in frame)
+ok("2 帮助行 ↑↓ 无 jk/JK", "↑↓选择" in frame and "jk选择" not in frame and "J/K" not in frame)
+ok("2 详情栏 首尾指令", "首尾指令" in frame and ">修复登录问题" in frame)
+frame2 = run([], [b"j", b"\x1b[B"])
+ok("2 j 键无操作（仅↓生效一次）", "修复登录问题" in frame2 and "ccs·2" in frame2)
 
 # 3. pager
 frame = run([], [b"o"])
 ok("3 pager 打开·页码", "[1/" in frame)
-frame = run([], [b"j", b"o", b"j"])
-ok("3 pager j 滚动（长内容可滚）", "[2/" in frame)
+frame = run([], [b"\x1b[B", b"o", b"\x1b[B"])
+ok("3 pager ↓ 滚动（长内容可滚）", "[2/" in frame)
 frame = run([], [b"o", b"q"])
 ok("3 pager q 返回列表", "ccs·2" in frame and "[1/" not in frame)
 

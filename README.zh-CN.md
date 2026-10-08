@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-blue?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.1.1-blue?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/python-3.9+-green?style=flat-square" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/dependencies-zero-brightgreen?style=flat-square" alt="Zero dependencies">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat-square" alt="Platform">
@@ -38,7 +38,7 @@ ccs
 | 跨目录浏览 | 所有项目的会话一张列表看完；默认当前目录，`Esc` 展开全部 |
 | 从哪打开就恢复到哪 | 启动目录从编码项目路径还原——不折叠、不归组、不猜 git 根 |
 | 干净标题 | `/clear`、`<command-name>`、续接样板、subagent 支线绝不泄漏；真实首问在 64 KB 头部采样之外也能找到 |
-| 详情栏 | 首条提问、最后回复、项目、分支、会话 ID——纯文本，鼠标原生可选中复制 |
+| 详情栏 | 首尾指令（用户输入前 3 / 后 3 条）、最后回复、项目、分支、会话 ID——纯文本，鼠标原生可选中复制 |
 | 归档 / 还原 / 软删除 | 会话只移动到 `~/.ccs/` 下，永不 `rm` |
 | 10 语言、4+ 主题 | 界面语言与配色可配置；支持自定义调色板 |
 | SDK 噪音过滤 | `entrypoint: sdk-cli` 衍生会话（compact 副产品）隐藏 |
@@ -93,16 +93,16 @@ ccs --check    # 非交互：统计会话/项目/归档数与最新标题
 
 | 键 | 动作 |
 |---|---|
-| ↑/↓ 或 j/k | 移动 |
+| ↑/↓ | 移动 |
 | `/` | 搜索（标题 / 项目 / 会话 ID，大小写不敏感） |
 | Tab | 项目过滤弹层（Enter 确认，Esc 取消） |
 | Enter | 在当前终端原地恢复：chdir 回会话原启动目录，exec 接管（命令模板可配，见 `resume_cmd`） |
 | a / u | 归档 / 还原 |
 | A | 归档区 ↔ 主列表 |
 | d | 软删除（移入 `~/.ccs/trash/`，见下文） |
-| J / K | 滚动右侧详情 |
-| o | 全屏阅读当前会话详情（j/k 滚动、Space 翻页、g/G 首尾、q 返回列表）——AI 总结较长时看得完整 |
-| y / Y | 复制首条提问 / 最后回复到剪贴板（pbcopy） |
+| PgUp/PgDn | 滚动右侧详情（整页） |
+| o | 全屏阅读当前会话详情（↑↓ 滚动、Space 翻页、g/G 首尾、q 返回列表）——AI 总结较长时看得完整 |
+| y / Y | 复制首条指令 / 最后回复到剪贴板（pbcopy） |
 | r / R | 重命名会话——等同 Claude Code 内 `/rename`（追加 `custom-title` 记录，官方 picker 同样显示） |
 | s | AI 总结：后台 `claude -p` 分析该会话（核心目标/进度%/分支状态/问题清单），结果存 `~/.ccs/summaries.json` 并显示在详情栏顶部；异步不阻塞——切换会话不打断 |
 | F5 或 Ctrl+L | 重扫（终端应用会截留 Cmd 系按键，故不用 Cmd+R）。Node 版仅 Ctrl+L——ink 不透传 F5 |

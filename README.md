@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-blue?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.1.1-blue?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/python-3.9+-green?style=flat-square" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/dependencies-zero-brightgreen?style=flat-square" alt="Zero dependencies">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat-square" alt="Platform">
@@ -38,7 +38,7 @@ That's it. Pick a session, hit `Enter`, and your terminal is taken over in place
 | Cross-directory browsing | Every project's sessions in one list; defaults to the current directory, `Esc` widens to all |
 | Resume where it was opened | Launch directory recovered from the encoded project path — no grouping, no git-root guessing |
 | Clean titles | `/clear`, `<command-name>`, continuation boilerplate and subagent sidechains never leak in; the real first question is found even beyond the 64 KB head sample |
-| Detail pane | First question, last reply, project, branch, session ID — plain text, natively mouse-selectable for copy |
+| Detail pane | First/last commands (first 3 / last 3 user inputs), last reply, project, branch, session ID — plain text, natively mouse-selectable for copy |
 | Archive / restore / soft-delete | Sessions move under `~/.ccs/`, never `rm`'d |
 | 10 languages, 4+ themes | UI language and colors configurable; define your own palettes |
 | SDK noise filtered | `entrypoint: sdk-cli` derivative sessions (compact by-products) are hidden |
@@ -93,16 +93,16 @@ First launch with no `~/.ccs/config.json` runs a guided setup for language and t
 
 | Key | Action |
 |---|---|
-| ↑/↓ or j/k | move |
+| ↑/↓ | move |
 | `/` | search (title / project / session ID, case-insensitive) |
 | Tab | project filter picker (Enter confirm, Esc cancel) |
 | Enter | resume in place: chdir to the session's original directory and exec (template configurable via `resume_cmd`) |
 | a / u | archive / restore |
 | A | archive view ↔ main list |
 | d | soft-delete (moved to `~/.ccs/trash/`, see below) |
-| J / K | scroll the detail pane |
-| `o` | read the current session fullscreen (pager: j/k scroll, Space page, g/G ends, q back) — for long AI summaries |
-| y / Y | copy first question / last reply to clipboard (pbcopy) |
+| PgUp/PgDn | scroll the detail pane (full page) |
+| `o` | read the current session fullscreen (pager: ↑/↓ scroll, Space page, g/G ends, q back) — for long AI summaries |
+| y / Y | copy first command / last reply to clipboard (pbcopy) |
 | r / R | rename the session — equivalent to Claude Code's `/rename` (appends a `custom-title` record; the official picker shows it too) |
 | s | AI summary: runs a background `claude -p` analysis of the session (goals / progress % / branch state / issues list), result stored in `~/.ccs/summaries.json` and shown at the top of the detail pane; non-blocking — switching sessions doesn't cancel it |
 | F5 or Ctrl+L | rescan (Cmd-key combos never reach a terminal app, hence no Cmd+R). Node build: Ctrl+L only — ink doesn't forward F5 |

@@ -154,16 +154,16 @@ export function CcsApp(props: Props) {
         setProject(pick && pick[1] === null ? null : (pick ? pick[1] : null));
         setCursor(0); setMode({ k: "list" });
       }
-      else if (input === "j" || key.downArrow) setPickerIdx((i) => Math.min(i + 1, items.length - 1));
-      else if (input === "k" || key.upArrow) setPickerIdx((i) => Math.max(i - 1, 0));
+      else if (key.downArrow) setPickerIdx((i) => Math.min(i + 1, items.length - 1));
+      else if (key.upArrow) setPickerIdx((i) => Math.max(i - 1, 0));
       return;
     }
 
     // ---- 列表态 ----
     if (pager.open && cur) {                                        // o pager 独占
       const dls = detailLines(cur, W - 2);
-      if (input === "j" || key.downArrow) setPager((p) => ({ ...p, off: p.off + 1 }));
-      else if (input === "k" || key.upArrow) setPager((p) => ({ ...p, off: Math.max(0, p.off - 1) }));
+      if (key.downArrow) setPager((p) => ({ ...p, off: p.off + 1 }));
+      else if (key.upArrow) setPager((p) => ({ ...p, off: Math.max(0, p.off - 1) }));
       else if (input === " " || key.pageDown || key.pageUp || input === "b") {
         const step = Math.max(1, H - 2);
         setPager((p) => ({ ...p, off: key.pageUp ? Math.max(0, p.off - step) : p.off + step }));
@@ -174,15 +174,14 @@ export function CcsApp(props: Props) {
       return;
     }
     if (input === "q") { process.stdout.write("\x1b[2J\x1b[H"); process.exit(0); }
-    else if (input === "j" || key.downArrow) setCursor((c) => Math.min(c + 1, Math.max(0, n - 1)));
-    else if (input === "k" || key.upArrow) setCursor((c) => Math.max(c - 1, 0));
+    else if (key.downArrow) setCursor((c) => Math.min(c + 1, Math.max(0, n - 1)));
+    else if (key.upArrow) setCursor((c) => Math.max(c - 1, 0));
     else if (input === "g") setCursor(0);
     else if (input === "G" && n) setCursor(n - 1);
     else if (input === "/") { setQuery(""); setCursor(0); setMode({ k: "search" }); }
     else if ((key.tab || input === "\t")) { setPickerIdx(0); setMode({ k: "picker" }); }
     else if (key.pageUp) setDscroll((d) => Math.max(0, d - listH));
-    else if (key.pageDown || input === "J") setDscroll((d) => d + listH);
-    else if (input === "K") setDscroll((d) => Math.max(0, d - 1));
+    else if (key.pageDown) setDscroll((d) => d + listH);
     else if (input === "o" && cur) setPager({ open: true, off: 0 });
     else if (input === "y" && cur) copyOut(cur.first_user);
     else if (input === "Y" && cur) copyOut(cur.last_reply);
@@ -256,8 +255,12 @@ export function CcsApp(props: Props) {
       out.push(bar, { text: T("ai_summary"), kind: "lab" });
       for (const ln of mdLines(s.text, width)) out.push({ text: ln, kind: "val" });
     }
+    const lc = m.last_cmds || [];
+    const shown = [...(m.first_cmds || [])];
+    if (lc.length && !shown.includes(lc[0])) shown.push("⋯", ...lc);   // 总数>6：中间省略
+    else for (const c of lc) if (!shown.includes(c)) shown.push(c);
     out.push(bar, { text: T("first_q"), kind: "lab" });
-    for (const ln of mdLines(m.first_user || T("none"), width)) out.push({ text: ln, kind: "val" });
+    for (const c of shown) out.push({ text: "> " + (mdLines(c, width)[0] ?? ""), kind: "val" });
     out.push(bar, { text: T("last_a"), kind: "lab" });
     for (const ln of mdLines(m.last_reply || T("none"), width)) out.push({ text: ln, kind: "val" });
     return out;

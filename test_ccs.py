@@ -290,7 +290,30 @@ def test_detail_lines_structure():
             assert isinstance(seg, tuple) and len(seg) == 2, f"段必须是(文本,attr): {seg!r}"
     texts = [seg[0] for row in rows for seg in row]
     assert any(t.startswith("---") for t in texts)      # 通栏分割线存在
-    assert "首条提问" in texts and "最后回复" in texts
+    assert "首尾指令" in texts and "最后回复" in texts
+
+
+def test_first_last_cmds():
+    """首尾指令：前3 + 省略 + 后3；总数≤6 时去重拼接。"""
+    td, proj, arch = _fake_tree()
+    f = os.path.join(proj, "cmds.jsonl")
+    msgs = []
+    for i in range(1, 9):                      # 8 条指令：前3 + ⋯ + 后3
+        msgs.append(user_line(f"sid-cm", "/w/projA", f"指令{i}号"))
+        msgs.append(asst_line(f"sid-cm", f"答{i}"))
+    write_jsonl(f, msgs)
+    m = ccs.parse_jsonl(f)
+    assert m.first_cmds == ["指令1号", "指令2号", "指令3号"]
+    assert m.last_cmds == ["指令6号", "指令7号", "指令8号"]
+    m2 = ccs.parse_jsonl(f)
+    m2.first_cmds, m2.last_cmds = ["A", "B"], ["B", "C"]   # 总数≤6：渲染去重
+    texts = [seg[0] for row in ccs._detail_lines(m2, 40) for seg in row]
+    joined = "".join(texts)
+    assert "> A" in joined and joined.count("> B") == 1 and "> C" in joined and "⋯" not in joined
+    m3 = ccs.parse_jsonl(f)                                  # >6：省略号在
+    texts3 = [seg[0] for row in ccs._detail_lines(m3, 40) for seg in row]
+    j3 = "".join(texts3)
+    assert "⋯" in j3 and "指令1号" in j3 and "指令8号" in j3
 
 
 def test_first_user_beyond_head_budget():

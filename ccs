@@ -6,7 +6,7 @@ try:
     locale.setlocale(locale.LC_ALL, "")
 except locale.Error:
     pass
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 INTERNAL_PREFIXES = ("Below is a conversation log", "Caveat: The messages below",
                       "<local-command", "<command-name>", "<command-message>", "<command-args>",
@@ -17,6 +17,8 @@ class SessionMeta:
     sid: str; title: str; cwd: str; branch: str = ""
     mtime: float = 0.0; size: int = 0; path: str = ""
     first_user: str = ""; last_reply: str = ""; summary: str = ""
+    first_cmds: list = field(default_factory=list)   # 用户指令前3（采样窗内）
+    last_cmds: list = field(default_factory=list)    # 用户指令后3（采样窗内）
     archived: bool = False
     entrypoint: str = ""    # sdk-cli = compact/SDK 衍生会话（默认隐藏）
     custom_title: str = ""  # /rename 写入，官方 picker 最高优先
@@ -49,7 +51,9 @@ def parse_jsonl(path: str, budget: int = 65536):
         return None
     meta = SessionMeta(sid="", title="", cwd="", mtime=st.st_mtime, size=st.st_size, path=path)
     first_user = ""; last_reply = ""; saw_content = False
-    def feed(line: bytes):
+    cmds = []                      # head 段指令（时间序）：前3入 meta
+    cmds_tail = []                 # tail 段指令（时间序）：后3入 meta——head/tail 分段收集，重叠区不重复
+    def feed(line: bytes, part="head"):
         nonlocal first_user, last_reply, saw_content
         try:
             o = json.loads(line)
@@ -81,6 +85,7 @@ def parse_jsonl(path: str, budget: int = 65536):
             txt = text_of(content).strip()
             if txt and not _is_internal(txt):
                 saw_content = True
+                (cmds if part == "head" else cmds_tail).append(txt)
                 if not first_user:
                     first_user = txt
         elif t == "assistant":
@@ -90,9 +95,9 @@ def parse_jsonl(path: str, budget: int = 65536):
                 last_reply = txt
     nlines = 0
     for line in head.splitlines():
-        feed(line); nlines += 1
+        feed(line, "head"); nlines += 1
     for line in tail.splitlines():
-        feed(line)
+        feed(line, "tail")
     # 纯 summary sidecar: 只有一行且是 summary（feed 里没消费，直接重查）
     if nlines <= 1 and b'"type":"summary"' in head.replace(b" ", b""):
         try:
@@ -124,6 +129,8 @@ def parse_jsonl(path: str, budget: int = 65536):
                         or meta.summary[:80] or first_user[:80]
                         or os.path.basename(path).removesuffix(".jsonl"))).strip() or "(空会话)"
     meta.first_user, meta.last_reply = first_user[:500], last_reply[:4000]   # 末答放宽：详情栏主浏览区，500 严重截断
+    meta.first_cmds = [c[:200] for c in cmds[:3]]
+    meta.last_cmds = [c[:200] for c in cmds_tail[-3:]]
     enc = os.path.basename(os.path.dirname(path))
     # 启动目录=编码目录还原，从哪打开归哪；realpath 归一符号链接（/tmp→/private/tmp 类）
     _cwd0 = launch_dir(enc, meta.cwd) or meta.cwd
@@ -147,20 +154,20 @@ I18N_KEYS = (  # 有序：STRINGS 按 zip(keys, values) 展开，键序必须与
     "rename_p", "rename_ok", "pager_hint")
 
 _LANG_DATA = {
-"zh": (" jk 选择 | / 搜索 | Tab 选项目 | Esc 返回 | Enter 恢复 | a/u 归档还原 | d 删 | A 归档区 | J/K 详情滚动 | y/Y 复制首问/末答 | o 阅读 | r 改名 | s 总结 | F5 重扫 | q 退出",
+"zh": (" ↑↓ 选择 | / 搜索 | Tab 选项目 | Esc 返回 | Enter 恢复 | a/u 归档还原 | d 删 | A 归档区 | y/Y 复制首问/末答 | o 阅读 | r 改名 | s 总结 | F5 重扫 | q 退出",
        "ccs · {n}", "【归档区】", "[项目: {v}]", "[搜: {v}]", "+ 详情", "时间     标题",
-       "标题", "项目", "分支", "ID", "首条提问", "最后回复", "(无)",
-       "搜索: ", " 项目过滤 j/k选择 回车确认 Esc取消 ", "全部", "终端太小 ({w}x{h}，需 ≥60x12)，q 退出",
+       "标题", "项目", "分支", "ID", "首尾指令", "最后回复", "(无)",
+       "搜索: ", " 项目过滤 ↑↓选择 回车确认 Esc取消 ", "全部", "终端太小 ({w}x{h}，需 ≥60x12)，q 退出",
        "该会话无 sessionId，无法恢复",        "已复制 {n} 字符到剪贴板", "无内容可复制", "无剪贴板工具（pbcopy/clip 均缺失）",
        "原目录 {p} 不存在，输入恢复目录(回车空=取消): ", "目录不存在: {p}，回车=自动创建 / 其他键=取消 ",
        "创建失败: {e}", "操作失败: {e}", "刚刚", "{n}分钟前", "{n}小时前", "{n}天前",
        "AI 总结", "总结生成中…", "总结任务已发起: {t}", "总结完成: {t}", "总结失败: {t}",
        "重命名 [{t}]: ", "已改名: {t}",
-       " j/k 滚动 | Space 翻页 | g/G 首尾 | q 返回列表"),
-"en": (" jk move | / search | Tab projects | Esc back | Enter resume | a/u archive-restore | d delete | A archive | J/K detail scroll | y/Y copy first/last | o read | r rename | s summary | F5 rescan | q quit",
+       " ↑↓ 滚动 | Space 翻页 | g/G 首尾 | q 返回列表"),
+"en": (" ↑↓ move | / search | Tab projects | Esc back | Enter resume | a/u archive-restore | d delete | A archive | y/Y copy first/last | o read | r rename | s summary | F5 rescan | q quit",
        "ccs · {n}", "[ARCHIVE]", "[proj: {v}]", "[q: {v}]", "+ detail", "time     title",
-       "title", "project", "branch", "ID", "first ask", "last reply", "(none)",
-       "search: ", " filter: j/k select, Enter confirm, Esc cancel ", "ALL",
+       "title", "project", "branch", "ID", "first/last cmds", "last reply", "(none)",
+       "search: ", " filter: ↑↓ select, Enter confirm, Esc cancel ", "ALL",
        "terminal too small ({w}x{h}, need >=60x12), q to quit",
        "no sessionId, cannot resume",        "copied {n} chars", "nothing to copy", "no clipboard tool (pbcopy/clip unavailable)",
        "original dir {p} gone, type resume dir (empty=cancel): ",
@@ -168,11 +175,11 @@ _LANG_DATA = {
        "mkdir failed: {e}", "operation failed: {e}", "just now", "{n}m ago", "{n}h ago", "{n}d ago",
        "AI summary", "summarizing…", "summary started: {t}", "summary done: {t}", "summary failed: {t}",
        "rename [{t}]: ", "renamed: {t}",
-       " j/k scroll | Space page | g/G ends | q back"),
-"ja": (" jk移動 | /検索 | Tabプロジェクト | Esc戻る | Enter復元 | a/uアーカイブ | d削除 | Aアーカイブ | J/Kスクロール | y/Yコピー | o閲読 | r改名 | s要約 | F5再読込 | q終了",
+       " ↑↓ scroll | Space page | g/G ends | q back"),
+"ja": (" jk移動 | /検索 | Tabプロジェクト | Esc戻る | Enter復元 | a/uアーカイブ | d削除 | Aアーカイブ | y/Yコピー | o閲読 | r改名 | s要約 | F5再読込 | q終了",
        "ccs · {n}", "【アーカイブ】", "[proj: {v}]", "[検: {v}]", "+ 詳細", "時刻     タイトル",
-       "タイトル", "プロジェクト", "ブランチ", "ID", "最初の質問", "最後の返信", "(なし)",
-       "検索: ", " プロジェクト選択 j/k選択 Enter確定 Esc取消 ", "すべて",
+       "タイトル", "プロジェクト", "ブランチ", "ID", "前後の指示", "最後の返信", "(なし)",
+       "検索: ", " プロジェクト選択 ↑↓選択 Enter確定 Esc取消 ", "すべて",
        "端末が小さすぎます ({w}x{h}、≥60x12 必須)、q で終了",
        "sessionId がなく復元できません",        "{n} 文字をコピーしました", "コピーする内容なし", "クリップボードツールなし (pbcopy/clip なし)",
        "元ディレクトリ {p} がありません、復元先を入力(空で取消): ",
@@ -180,11 +187,11 @@ _LANG_DATA = {
        "作成失敗: {e}", "操作失敗: {e}", "たった今", "{n}分前", "{n}時間前", "{n}日前",
        "AI 要約", "要約生成中…", "要約タスク開始: {t}", "要約完了: {t}", "要約失敗: {t}",
        "名前変更 [{t}]: ", "変更後: {t}",
-       " j/kスクロール | Space改ページ | g/G先頭/末尾 | q戻る"),
-"ko": (" jk 이동 | / 검색 | Tab 프로젝트 | Esc 뒤로 | Enter 복원 | a/u 보관 | d 삭제 | A 보관함 | J/K 스크롤 | y/Y 복사 | o 읽기 | r 이름변경 | s 요약 | F5 재스캔 | q 종료",
+       " ↑↓スクロール | Space改ページ | g/G先頭/末尾 | q戻る"),
+"ko": (" ↑↓ 이동 | / 검색 | Tab 프로젝트 | Esc 뒤로 | Enter 복원 | a/u 보관 | d 삭제 | A 보관함 | y/Y 복사 | o 읽기 | r 이름변경 | s 요약 | F5 재스캔 | q 종료",
        "ccs · {n}", "[보관함]", "[proj: {v}]", "[q: {v}]", "+ 상세", "시간     제목",
-       "제목", "프로젝트", "브랜치", "ID", "첫 질문", "마지막 답변", "(없음)",
-       "검색: ", " 프로젝트 필터 j/k선택 Enter확정 Esc취소 ", "전체",
+       "제목", "프로젝트", "브랜치", "ID", "처음/끝 명령", "마지막 답변", "(없음)",
+       "검색: ", " 프로젝트 필터 ↑↓선택 Enter확정 Esc취소 ", "전체",
        "터미널이 너무 작습니다 ({w}x{h}, ≥60x12 필요), q 종료",
        "sessionId 없음, 복원 불가",        "{n}자 복사됨", "복사할 내용 없음", "클립보드 도구 없음 (pbcopy/clip 부재)",
        "원래 디렉터리 {p} 없음, 복원할 경로 입력(빈칸=취소): ",
@@ -192,11 +199,11 @@ _LANG_DATA = {
        "생성 실패: {e}", "작업 실패: {e}", "방금", "{n}분 전", "{n}시간 전", "{n}일 전",
        "AI 요약", "요약 생성 중…", "요약 시작: {t}", "요약 완료: {t}", "요약 실패: {t}",
        "이름 변경 [{t}]: ", "변경됨: {t}",
-       " j/k 스크롤 | Space 페이지 | g/G 처음/끝 | q 돌아가기"),
-"es": (" jk mover | / buscar | Tab proyectos | Esc atrás | Enter reanudar | a/u archivar | d borrar | A archivo | J/K scroll | y/Y copiar | o leer | r renombrar | s resumen | F5 reescanear | q salir",
+       " ↑↓ 스크롤 | Space 페이지 | g/G 처음/끝 | q 돌아가기"),
+"es": (" ↑↓ mover | / buscar | Tab proyectos | Esc atrás | Enter reanudar | a/u archivar | d borrar | A archivo | y/Y copiar | o leer | r renombrar | s resumen | F5 reescanear | q salir",
        "ccs · {n}", "[ARCHIVO]", "[proy: {v}]", "[b: {v}]", "+ detalle", "hora     título",
-       "título", "proyecto", "rama", "ID", "primera pregunta", "última respuesta", "(nada)",
-       "buscar: ", " filtro: j/k elegir, Enter confirmar, Esc cancelar ", "TODAS",
+       "título", "proyecto", "rama", "ID", "primeros/últ cmds", "última respuesta", "(nada)",
+       "buscar: ", " filtro: ↑↓ elegir, Enter confirmar, Esc cancelar ", "TODAS",
        "terminal demasiado pequeña ({w}x{h}, ≥60x12), q salir",
        "sin sessionId, no se puede reanudar",        "{n} caracteres copiados", "nada que copiar", "sin portapapeles (pbcopy/clip no disponibles)",
        "dir original {p} no existe, escribe dir de reanudación (vacío=cancelar): ",
@@ -204,11 +211,11 @@ _LANG_DATA = {
        "error al crear: {e}", "fallo de operación: {e}", "ahora", "hace {n}m", "hace {n}h", "hace {n}d",
        "Resumen IA", "generando resumen…", "resumen iniciado: {t}", "resumen listo: {t}", "fallo de resumen: {t}",
        "renombrar [{t}]: ", "renombrado: {t}",
-       " j/k desplazar | Space página | g/G extremos | q volver"),
-"fr": (" jk déplacer | / rechercher | Tab projets | Esc retour | Enter reprendre | a/u archiver | d supprimer | A archives | J/K défilement | y/Y copier | o lire | r renommer | s résumé | F5 rescanner | q quitter",
+       " ↑↓ desplazar | Space página | g/G extremos | q volver"),
+"fr": (" ↑↓ déplacer | / rechercher | Tab projets | Esc retour | Enter reprendre | a/u archiver | d supprimer | A archives | y/Y copier | o lire | r renommer | s résumé | F5 rescanner | q quitter",
        "ccs · {n}", "[ARCHIVES]", "[proj: {v}]", "[q: {v}]", "+ détail", "heure     titre",
-       "titre", "projet", "branche", "ID", "première question", "dernière réponse", "(aucun)",
-       "recherche : ", " filtre : j/k choisir, Enter valider, Esc annuler ", "TOUTES",
+       "titre", "projet", "branche", "ID", "1res/derniers cmds", "dernière réponse", "(aucun)",
+       "recherche : ", " filtre : ↑↓ choisir, Enter valider, Esc annuler ", "TOUTES",
        "terminal trop petit ({w}x{h}, ≥60x12), q quitter",
        "sessionId absent, reprise impossible",        "{n} caractères copiés", "rien à copier", "pas de presse-papiers (pbcopy/clip indisponibles)",
        "répertoire d'origine {p} absent, tapez répertoire de reprise (vide=annuler) : ",
@@ -216,11 +223,11 @@ _LANG_DATA = {
        "échec création : {e}", "échec : {e}", "à l'instant", "il y a {n}m", "il y a {n}h", "il y a {n}j",
        "Résumé IA", "résumé en cours…", "résumé lancé : {t}", "résumé terminé : {t}", "échec du résumé : {t}",
        "renommer [{t}] : ", "renommé : {t}",
-       " j/k défiler | Space page | g/G extrémités | q retour"),
-"de": (" jk bewegen | / suchen | Tab Projekte | Esc zurück | Enter fortsetzen | a/u archivieren | d löschen | A Archiv | J/K scrollen | y/Y kopieren | o lesen | r umbenennen | s Zusammenfassung | F5 neu einlesen | q beenden",
+       " ↑↓ défiler | Space page | g/G extrémités | q retour"),
+"de": (" ↑↓ bewegen | / suchen | Tab Projekte | Esc zurück | Enter fortsetzen | a/u archivieren | d löschen | A Archiv | y/Y kopieren | o lesen | r umbenennen | s Zusammenfassung | F5 neu einlesen | q beenden",
        "ccs · {n}", "[ARCHIV]", "[proj: {v}]", "[q: {v}]", "+ Detail", "Zeit     Titel",
-       "Titel", "Projekt", "Branch", "ID", "erste Frage", "letzte Antwort", "(nichts)",
-       "Suche: ", " Filter: j/k wählen, Enter bestätigen, Esc abbrechen ", "ALLE",
+       "Titel", "Projekt", "Branch", "ID", "erste/letzte Befehle", "letzte Antwort", "(nichts)",
+       "Suche: ", " Filter: ↑↓ wählen, Enter bestätigen, Esc abbrechen ", "ALLE",
        "Terminal zu klein ({w}x{h}, ≥60x12), q beenden",
        "keine sessionId, kein Resume",        "{n} Zeichen kopiert", "nichts zu kopieren", "keine Zwischenablage (pbcopy/clip fehlen)",
        "Original-Verzeichnis {p} fehlt, Resume-Verzeichnis eingeben (leer=Abbruch): ",
@@ -228,11 +235,11 @@ _LANG_DATA = {
        "Erstellen fehlgeschlagen: {e}", "Fehler: {e}", "gerade", "vor {n}M", "vor {n}S", "vor {n}T",
        "KI-Zusammenfassung", "Zusammenfassung läuft…", "Zusammenfassung gestartet: {t}", "Zusammenfassung fertig: {t}", "Zusammenfassung fehlgeschlagen: {t}",
        "umbenennen [{t}]: ", "umbenannt: {t}",
-       " j/k scrollen | Space Seite | g/G Enden | q zurück"),
-"ru": (" jk вниз/вверх | / поиск | Tab проекты | Esc назад | Enter возобновить | a/u архив | d удалить | A архив | J/K прокрутка | y/Y копировать | o чтение | r переим. | s обзор | F5 пересканировать | q выход",
+       " ↑↓ scrollen | Space Seite | g/G Enden | q zurück"),
+"ru": (" ↑↓ вниз/вверх | / поиск | Tab проекты | Esc назад | Enter возобновить | a/u архив | d удалить | A архив | y/Y копировать | o чтение | r переим. | s обзор | F5 пересканировать | q выход",
        "ccs · {n}", "[АРХИВ]", "[proj: {v}]", "[q: {v}]", "+ детали", "время     заголовок",
-       "заголовок", "проект", "ветка", "ID", "первый вопрос", "последний ответ", "(нет)",
-       "поиск: ", " фильтр: j/k выбрать, Enter подтвердить, Esc отмена ", "ВСЕ",
+       "заголовок", "проект", "ветка", "ID", "перв/посл команды", "последний ответ", "(нет)",
+       "поиск: ", " фильтр: ↑↓ выбрать, Enter подтвердить, Esc отмена ", "ВСЕ",
        "терминал слишком мал ({w}x{h}, ≥60x12), q выход",
        "нет sessionId, возобновление невозможно",        "скопировано {n} символов", "нечего копировать", "нет буфера обмена (нет pbcopy/clip)",
        "исходный каталог {p} отсутствует, введите каталог возобновления (пусто=отмена): ",
@@ -240,11 +247,11 @@ _LANG_DATA = {
        "ошибка создания: {e}", "сбой: {e}", "только что", "{n}м назад", "{n}ч назад", "{n}д назад",
        "ИИ-резюме", "создание резюме…", "резюме запущено: {t}", "резюме готово: {t}", "ошибка резюме: {t}",
        "переименовать [{t}]: ", "переименовано: {t}",
-       " j/k прокрутка | Space страница | g/G края | q назад"),
-"pt": (" jk mover | / buscar | Tab projetos | Esc voltar | Enter retomar | a/u arquivar | d excluir | A arquivo | J/K rolar | y/Y copiar | o ler | r renomear | s resumo | F5 reescanear | q sair",
+       " ↑↓ прокрутка | Space страница | g/G края | q назад"),
+"pt": (" ↑↓ mover | / buscar | Tab projetos | Esc voltar | Enter retomar | a/u arquivar | d excluir | A arquivo | y/Y copiar | o ler | r renomear | s resumo | F5 reescanear | q sair",
        "ccs · {n}", "[ARQUIVO]", "[proj: {v}]", "[q: {v}]", "+ detalhes", "hora     título",
-       "título", "projeto", "branch", "ID", "primeira pergunta", "última resposta", "(nada)",
-       "buscar: ", " filtro: j/k escolher, Enter confirmar, Esc cancelar ", "TODAS",
+       "título", "projeto", "branch", "ID", "1ºs/últimos cmds", "última resposta", "(nada)",
+       "buscar: ", " filtro: ↑↓ escolher, Enter confirmar, Esc cancelar ", "TODAS",
        "terminal muito pequeno ({w}x{h}, ≥60x12), q sair",
        "sem sessionId, não é possível retomar",        "{n} caracteres copiados", "nada para copiar", "sem área de transferência (pbcopy/clip ausentes)",
        "diretório original {p} ausente, digite diretório (vazio=cancelar): ",
@@ -252,11 +259,11 @@ _LANG_DATA = {
        "falha ao criar: {e}", "falha: {e}", "agora", "há {n}m", "há {n}h", "há {n}d",
        "Resumo IA", "gerando resumo…", "resumo iniciado: {t}", "resumo completo: {t}", "falha no resumo: {t}",
        "renomear [{t}]: ", "renomeado: {t}",
-       " j/k rolar | Space página | g/G extremos | q voltar"),
-"it": (" jk sposta | / cerca | Tab progetti | Esc indietro | Enter riprendi | a/u archivia | d elimina | A archivio | J/K scorri | y/Y copia | o leggere | r rinomina | s riepilogo | F5 riscansiona | q esci",
+       " ↑↓ rolar | Space página | g/G extremos | q voltar"),
+"it": (" ↑↓ sposta | / cerca | Tab progetti | Esc indietro | Enter riprendi | a/u archivia | d elimina | A archivio | y/Y copia | o leggere | r rinomina | s riepilogo | F5 riscansiona | q esci",
        "ccs · {n}", "[ARCHIVIO]", "[proj: {v}]", "[q: {v}]", "+ dettaglio", "ora     titolo",
-       "titolo", "progetto", "ramo", "ID", "prima domanda", "ultima risposta", "(nessuno)",
-       "cerca: ", " filtro: j/k scegli, Enter conferma, Esc annulla ", "TUTTE",
+       "titolo", "progetto", "ramo", "ID", "primi/ultimi comandi", "ultima risposta", "(nessuno)",
+       "cerca: ", " filtro: ↑↓ scegli, Enter conferma, Esc annulla ", "TUTTE",
        "terminale troppo piccolo ({w}x{h}, ≥60x12), q esci",
        "senza sessionId, ripresa impossibile",        "{n} caratteri copiati", "niente da copiare", "nessuno strumento appunti (pbcopy/clip assenti)",
        "dir originale {p} assente, digita dir di ripresa (vuoto=annulla): ",
@@ -264,7 +271,7 @@ _LANG_DATA = {
        "creazione fallita: {e}", "errore: {e}", "adesso", "{n}m fa", "{n}h fa", "{n}g fa",
        "Riassunto IA", "generazione riassunto…", "riassunto avviato: {t}", "riassunto pronto: {t}", "riassunto fallito: {t}",
        "rinominare [{t}]: ", "rinominato: {t}",
-       " j/k scorri | Space pagina | g/G estremità | q indietro"),
+       " ↑↓ scorri | Space pagina | g/G estremità | q indietro"),
 }
 STRINGS = {lang: dict(zip(I18N_KEYS, tup)) for lang, tup in _LANG_DATA.items()}
 _LANG = "zh"
@@ -299,8 +306,9 @@ def save_config(cfg: dict, home: str = ""):
         json.dump(cfg, f, ensure_ascii=False, indent=1)
     os.replace(tmp, config_path(h))
 
-_CACHE_FIELDS = ("sid", "title", "cwd", "branch", "first_user", "last_reply", "entrypoint")
-CACHE_VERSION = 15   # +1: last_reply 预算 500→4000   # +1: cwd realpath 归一符号链接   # +1: 标题链对齐官方（custom-title > ai-title > summary > 首问）   # +1: title 净化换行（多行 title 折行泄漏到边框外）   # +1: 隐藏 sdk-cli 衍生会话   # +1: 取消一切归组折叠，cwd=启动目录   # +1: 归组锚定 home 下前两级   # +1: 目录编码规则修正（_/./全压-，还原下划线真实路径）   # +1: worktree 启动折回主仓库   # +1: cwd 改为编码目录名反推的真实启动目录   # +1: 首问流式兜底   # 解析语义变更（黑名单等）时 +1，旧缓存条目整体失效
+_CACHE_FIELDS = ("sid", "title", "cwd", "branch", "first_user", "last_reply",
+                 "entrypoint", "first_cmds", "last_cmds")
+CACHE_VERSION = 17   # +1: 首尾指令分段收集（head/tail 重叠去重）   # +1: 新增首尾指令字段 first_cmds/last_cmds   # +1: last_reply 预算 500→4000   # +1: cwd realpath 归一符号链接   # +1: 标题链对齐官方（custom-title > ai-title > summary > 首问）   # +1: title 净化换行（多行 title 折行泄漏到边框外）   # +1: 隐藏 sdk-cli 衍生会话   # +1: 取消一切归组折叠，cwd=启动目录   # +1: 归组锚定 home 下前两级   # +1: 目录编码规则修正（_/./全压-，还原下划线真实路径）   # +1: worktree 启动折回主仓库   # +1: cwd 改为编码目录名反推的真实启动目录   # +1: 首问流式兜底   # 解析语义变更（黑名单等）时 +1，旧缓存条目整体失效
 
 class Cache:
     def __init__(self, ccs_home: str):
@@ -830,8 +838,14 @@ def _detail_lines(m, width, sums=None):
                 + [[(t, 0)] for t in _md_lines(s["text"], width)]
         elif m.sid in JOBS:
             lines += bar + [[(T("ai_summary"), lab)]] + [[(T("sum_run"), dim)]]
+    shown = list(m.first_cmds or [])
+    lc = list(m.last_cmds or [])
+    if lc and (not shown or lc[0] not in shown):      # 总数>6：中间省略
+        shown += ["⋯"] + lc
+    elif lc:
+        shown += [c for c in lc if c not in shown]
     lines += bar + [[(T("first_q"), lab)]] \
-        + [[(t, 0)] for t in _md_lines(m.first_user or T("none"), width)] \
+        + [[("> " + t, 0)] for c in shown for t in (_md_lines(c, width)[:1] or [""])] \
         + bar + [[(T("last_a"), lab)]] \
         + [[(t, 0)] for t in _md_lines(m.last_reply or T("none"), width)]
     return lines
@@ -1004,7 +1018,7 @@ def _palette_attrs(cfg):
     return border_attr, sel_attr, time_attr, msg_attr
 
 def _detail_page(stdscr, cfg, title, desc, items,
-                 keys=" j/k 选择 select · Enter 确认 · Esc 返回 back", del_ok=False, cur=None):
+                 keys=" ↑↓ 选择 select · Enter 确认 · Esc 返回 back", del_ok=False, cur=None):
     """通用整页选择页（无弹层）：反白标题 + 说明 + 分隔线 + 选项列表。
     items 兼容 (label, attr) / (label, attr, value)；Enter 返回 value（缺省 label）；
     del_ok 时按 d 返回 ("__DEL__", value)；Esc/q 返回 None（回列表页）。"""
@@ -1036,9 +1050,9 @@ def _detail_page(stdscr, cfg, title, desc, items,
             continue
         if isinstance(k, int):
             k = curses.keyname(k).decode()
-        if k in ("j", "KEY_DOWN"):
+        if k == "KEY_DOWN":
             idx = min(idx + 1, len(items) - 1)
-        elif k in ("k", "KEY_UP"):
+        elif k == "KEY_UP":
             idx = max(idx - 1, 0)
         elif k in ("\n", "KEY_ENTER"):
             return items[idx][2] if len(items[idx]) > 2 else items[idx][0]
@@ -1108,12 +1122,12 @@ def _config_tui(stdscr, cfg: dict):
         nm = nm.strip()
         acc = _detail_page(stdscr, cfg, "强调色 accent（边框/时间列/选中行）",
                            "选择强调色——作用于边框/时间列/选中行底色。",
-                           _color_options(), " j/k 选择 · Enter 确认 · Esc 取消", cur="cyan")
+                           _color_options(), " ↑↓ 选择 · Enter 确认 · Esc 取消", cur="cyan")
         if not acc:
             return ""
         mc = _detail_page(stdscr, cfg, "消息色 msg（底部消息行）",
                           "选择消息色——作用于底部消息行。",
-                          _color_options(), " j/k 选择 · Enter 确认 · Esc 取消", cur="yellow")
+                          _color_options(), " ↑↓ 选择 · Enter 确认 · Esc 取消", cur="yellow")
         if not mc:
             return ""
         cu = cfg.get("custom") or {}
@@ -1155,7 +1169,7 @@ def _config_tui(stdscr, cfg: dict):
         if msg:
             _safe_add(stdscr, H - 2, 0, _pad(msg, W - 1)[:W - 1], msg_attr)
         _safe_add(stdscr, H - 1, 0,
-                  " j/k 移动 move · Enter 进入详情 detail · q 保存退出 save · Esc 原样退出"[:W - 1],
+                  " ↑↓ 移动 move · Enter 进入详情 detail · q 保存退出 save · Esc 原样退出"[:W - 1],
                   curses.A_DIM)
         stdscr.refresh()
         try:
@@ -1164,10 +1178,10 @@ def _config_tui(stdscr, cfg: dict):
             continue
         if isinstance(k, int):
             k = curses.keyname(k).decode()
-        if k in ("j", "KEY_DOWN"):
+        if k == "KEY_DOWN":
             sel = min(sel + 1, len(rows) - 1)
             continue
-        if k in ("k", "KEY_UP"):
+        if k == "KEY_UP":
             sel = max(sel - 1, 0)
             continue
         if k in ("q", "Q"):
@@ -1227,7 +1241,7 @@ def _config_tui(stdscr, cfg: dict):
                     items.append((nm0 + ("  ✓" if nm0 == cur else ""),
                                   msg_attr if nm0 == cur else curses.color_pair(1), nm0))
                 v = _detail_page(stdscr, cfg, "自定义调色板 custom", _CONFIG_DESCS["custom"], items,
-                                 keys=" j/k 选择 · Enter 使用 use · d 删除 delete · Esc 返回 back",
+                                 keys=" ↑↓ 选择 · Enter 使用 use · d 删除 delete · Esc 返回 back",
                                  del_ok=True)
                 if v == "__new__":
                     msg = _new_custom_flow()
@@ -1460,13 +1474,13 @@ def main(argv) -> int:
                 continue
             if isinstance(k, int):                   # 功能键 → "KEY_xxx" 名，兼容既有分支
                 k = curses.keyname(k).decode()
-            if k not in ("KEY_UP", "KEY_DOWN", "j", "k", "g", "G", "J", "K",
+            if k not in ("KEY_UP", "KEY_DOWN", "g", "G",
                          "KEY_MOUSE", "KEY_PPAGE", "KEY_NPAGE", "s"):
                 msg = ""                      # 移动/滚动键保留状态行，其余键先清空再处理
             if picker_open:                   # 弹层模式：独占按键
-                if k in ("j", "KEY_DOWN"):
+                if k == "KEY_DOWN":
                     picker_idx = min(picker_idx + 1, len(picker_items) - 1)
-                elif k in ("k", "KEY_UP"):
+                elif k == "KEY_UP":
                     picker_idx = max(picker_idx - 1, 0)
                 elif k in ("\n", "KEY_ENTER"):
                     st.project = picker_items[picker_idx][1]
@@ -1476,10 +1490,10 @@ def main(argv) -> int:
                 elif k in ("\x1b", "ESC", "q", "Q", "\t"):
                     picker_open = False
                 continue
-            if pager_open:                    # 全屏阅读：独占按键，j/k 滚内容不切会话
-                if k in ("j", "KEY_DOWN"):
+            if pager_open:                    # 全屏阅读：独占按键，↑↓ 滚内容不切会话
+                if k == "KEY_DOWN":
                     pgoff += 1
-                elif k in ("k", "KEY_UP"):
+                elif k == "KEY_UP":
                     pgoff = max(0, pgoff - 1)
                 elif k in (" ", "KEY_NPAGE"):
                     pgoff += max(1, H - 2)
@@ -1515,14 +1529,12 @@ def main(argv) -> int:
                 continue
             if k in ("q", "Q"):
                 return
-            elif k in ("KEY_UP", "k"): st.move(-1)
-            elif k in ("KEY_DOWN", "j"): st.move(1)
+            elif k == "KEY_UP": st.move(-1)
+            elif k == "KEY_DOWN": st.move(1)
             elif k == "g": st.cursor = 0
             elif k == "G" and n: st.cursor = n - 1
             elif k == "KEY_PPAGE": dscroll -= list_h
             elif k == "KEY_NPAGE": dscroll += list_h
-            elif k == "K": dscroll -= 1
-            elif k == "J": dscroll += 1
             elif k == "/":
                 searching = True
                 st.query = ""

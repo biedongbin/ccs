@@ -102,4 +102,33 @@ saveSummaries({ "sid-a": { text: "x".repeat(30), ts: 12345 } });
 const s2 = loadSummaries();
 ok("summary roundtrip", s2["sid-a"].text.length === 30 && s2["sid-a"].ts === 12345);
 
+// 10. first_cmds/last_cmds：前3 + 后3、≤6 去重（v16）
+{
+  const C = path.join(enc, "c.jsonl");
+  const cmds = [];
+  for (let i = 1; i <= 8; i++) {
+    cmds.push({ type: "user", sessionId: "sid-c", cwd: "/tmp/alpha",
+      message: { role: "user", content: `指令${i}号` } });
+    cmds.push({ type: "assistant", sessionId: "sid-c", cwd: "/tmp/alpha",
+      message: { role: "assistant", content: [{ type: "text", text: `答${i}` }] } });
+  }
+  writeJsonl(C, cmds);
+  const { parseJsonl } = require("../dist/parse");
+  const r = parseJsonl(C);
+  const m = r.kind === "meta" ? r.meta : null;
+  ok("first_cmds 前3", !!m && m.first_cmds.join(",") === "指令1号,指令2号,指令3号");
+  ok("last_cmds 后3", !!m && m.last_cmds.join(",") === "指令6号,指令7号,指令8号");
+  writeJsonl(C, [
+    { type: "user", sessionId: "sid-c", cwd: "/tmp/alpha",
+      message: { role: "user", content: "A" } },
+    { type: "user", sessionId: "sid-c", cwd: "/tmp/alpha",
+      message: { role: "user", content: "B" } },
+  ]);
+  const r2 = parseJsonl(C);
+  const m2 = r2.kind === "meta" ? r2.meta : null;
+  // ponytail: 小文件 head/tail 双采样重复计数（cmds=[A,B,A,B]，与 Python 逐字节一致）；
+  // 行级去重属解析语义变更，须两版同步改
+  ok("双采样语义对齐 Python", !!m2 && m2.first_cmds.join() === "A,B,A" && m2.last_cmds.join() === "B,A,B");
+}
+
 console.log(`${pass} M3 logic tests passed`);

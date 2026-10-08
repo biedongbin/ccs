@@ -27,6 +27,8 @@ export interface SessionMeta {
   path: string;
   first_user: string;
   last_reply: string;
+  first_cmds: string[];   // 用户指令前3（采样窗内，对齐 Python v16）
+  last_cmds: string[];    // 用户指令后3
   summary: string;
   archived: boolean;
   entrypoint: string;
@@ -93,15 +95,17 @@ export function parseJsonl(p: string, budget = 65536): Parsed {
   const meta: SessionMeta = {
     sid: "", title: "", cwd: "", branch: "",
     mtime: st.mtimeMs / 1000, size: st.size, path: p,   // Python st_mtime 为秒
-    first_user: "", last_reply: "", summary: "",
+    first_user: "", last_reply: "", summary: "", first_cmds: [], last_cmds: [],
     archived: false, entrypoint: "", custom_title: "", ai_title: "",
   };
   let firstUser = "";
   let lastReply = "";
+  const cmds: string[] = [];            // head 段指令：前3（v17 分段收集，重叠区不重复）
+  const cmdsTail: string[] = [];        // tail 段指令：后3
   let sawContent = false;
   let nlines = 0;
 
-  const feed = (line: Buffer): void => {
+  const feed = (line: Buffer, part: "head" | "tail" = "head"): void => {
     let o: any;
     try {
       o = JSON.parse(line.toString("utf8"));
@@ -126,6 +130,7 @@ export function parseJsonl(p: string, budget = 65536): Parsed {
       const txt = textOf(content).trim();
       if (txt && !isInternal(txt)) {
         sawContent = true;
+        (part === "head" ? cmds : cmdsTail).push(txt);
         if (!firstUser) firstUser = txt;
       }
     } else if (t === "assistant") {
@@ -138,10 +143,10 @@ export function parseJsonl(p: string, budget = 65536): Parsed {
   };
 
   for (const line of splitLines(head)) {
-    feed(line);
+    feed(line, "head");
     nlines++;
   }
-  for (const line of splitLines(tail)) feed(line);
+  for (const line of splitLines(tail)) feed(line, "tail");
 
   // 纯 summary sidecar：只有一行且是 summary（feed 里 leafUuid 行被 return，直接重查）
   if (nlines <= 1 && head.toString("latin1").replace(/ /g, "").includes('"type":"summary"')) {
@@ -222,6 +227,8 @@ export function parseJsonl(p: string, budget = 65536): Parsed {
     .trim() || "(空会话)";
   meta.first_user = firstUser.slice(0, 500);
   meta.last_reply = lastReply.slice(0, 4000);
+  meta.first_cmds = cmds.slice(0, 3).map((c) => c.slice(0, 200));
+  meta.last_cmds = cmdsTail.slice(-3).map((c) => c.slice(0, 200));
 
   const enc = path.basename(path.dirname(p));
   const cwd0 = launchDir(enc, meta.cwd) || meta.cwd;
