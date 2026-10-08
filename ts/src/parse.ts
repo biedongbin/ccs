@@ -160,8 +160,9 @@ export function parseJsonl(p: string, budget = 65536): Parsed {
     }
   }
 
-  if (!firstUser) {
-    // 兜底：真实首问在头尾采样窗外 → 流式全扫
+  if (!firstUser || (!cmds.length && !cmdsTail.length)) {
+    // 兜底：真实首问/指令在头尾采样窗外（compact 续接样板挤占头部）→ 流式全扫
+    const fullCmds: string[] = [];
     try {
       const fd = fs.openSync(p, "r");
       try {
@@ -184,12 +185,11 @@ export function parseJsonl(p: string, budget = 65536): Parsed {
             if (o.type !== "user" || o.isSidechain) continue;
             const txt = textOf(o.message?.content).trim();
             if (txt && !isInternal(txt)) {
-              firstUser = txt;
+              fullCmds.push(txt);                     // 全序收集：前3+后3（不 break）
               sawContent = true;
-              break;
+              if (!firstUser) firstUser = txt;
             }
           }
-          if (firstUser) break;
         }
         if (carry.length && !firstUser) {          // 末段无尾换行也过一遍（Python 逐行迭代语义）
           let o: any;
@@ -202,8 +202,9 @@ export function parseJsonl(p: string, budget = 65536): Parsed {
               && o.type === "user" && !o.isSidechain) {
             const txt = textOf(o.message?.content).trim();
             if (txt && !isInternal(txt)) {
-              firstUser = txt;
+              fullCmds.push(txt);
               sawContent = true;
+              if (!firstUser) firstUser = txt;
             }
           }
         }
@@ -213,6 +214,8 @@ export function parseJsonl(p: string, budget = 65536): Parsed {
     } catch {
       /* ignore */
     }
+    if (!cmds.length) cmds.push(...fullCmds.slice(0, 3));          // 全扫兜底回填（采样窗内已有则不覆盖）
+    if (!cmdsTail.length) cmdsTail.push(...fullCmds.slice(-3));
   }
 
   const chain = [

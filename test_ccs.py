@@ -293,6 +293,22 @@ def test_detail_lines_structure():
     assert "首尾指令" in texts and "最后回复" in texts
 
 
+def test_first_last_cmds_compact_fallback():
+    """compact 会话：头部续接样板+工具噪音挤占采样窗，指令在窗外——全扫兜底必须填出前3/后3。"""
+    td, proj, arch = _fake_tree()
+    f = os.path.join(proj, "cf.jsonl")
+    lines = [user_line("sid-cf", "/w/projA", "This session is being continued from a previous conversation")]
+    lines.append(asst_line("sid-cf", "噪音" * 30000))          # >64KB 挤占头部
+    for i in range(1, 9):
+        lines.append(user_line("sid-cf", "/w/projA", f"指令{i}"))
+        lines.append(asst_line("sid-cf", f"答{i}"))
+    lines.append(asst_line("sid-cf", "尾部噪音" * 20000))      # >64KB 挤占尾部
+    write_jsonl(f, lines)
+    m = ccs.parse_jsonl(f)
+    assert m.first_cmds == ["指令1", "指令2", "指令3"], m.first_cmds
+    assert m.last_cmds == ["指令6", "指令7", "指令8"], m.last_cmds
+
+
 def test_first_last_cmds():
     """首尾指令：前3 + 省略 + 后3；总数≤6 时去重拼接。"""
     td, proj, arch = _fake_tree()

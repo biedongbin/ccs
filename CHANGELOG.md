@@ -4,7 +4,7 @@
 
 - **Navigation keys simplified**: `j`/`k`/`J`/`K` bindings removed everywhere — movement is `↑`/`↓` only; detail-pane scrolling is PgUp/PgDn (full page). In search mode `j`/`k` remain plain input characters, and `↑`/`↓` browse the filtered results.
 - **Search-results browsing fixed**: arrow keys now move the cursor while the incremental search is active (both builds). Root-caused a long-standing Python regression on the way — `get_wch` does not assemble keypad escape sequences, so `↑↓`/PgUp/PgDn/F5 had silently degraded into bare `ESC` + chars ever since the CJK input fix; a `_read_key` assembly layer now restores them (both the search view and the plain list).
-- **Detail pane: "first/last commands"** — replaces the single first-question entry with the first 3 / last 3 user commands (with `⋯` in between when more than 6 exist); schema fields `first_cmds`/`last_cmds`, cache version 16.
+- **Detail pane: "first/last commands"** — replaces the single first-question entry with the first 3 / last 3 user commands (with `⋯` in between when more than 6 exist); schema fields `first_cmds`/`last_cmds`, cache version 16. Follow-ups: commands are collected per head/tail sample window (overlap-safe, v17), and a full-file scan fallback fills them when `/compact` boilerplate crowds the real commands out of both windows (v18).
 
 ## 1.1.0 (2026-10-08)
 

@@ -106,7 +106,10 @@ def parse_jsonl(path: str, budget: int = 65536):
                 return Sidecar(leaf=o.get("leafUuid", ""), summary=str(o.get("summary", "")))
         except Exception:
             pass
-    if not first_user:   # 兜底：真实首问在头尾采样窗外（hook 样板挤占头部）→ 流式全扫
+    if not first_user or not (cmds or cmds_tail):
+        # 兜底：真实首问/指令在头尾采样窗外（compact 续接样板挤占头部）→ 流式全扫
+        # 全扫是完整时间序：first3 取前三、last3 取末三
+        full_cmds = []
         try:
             with open(path, "rb") as f:
                 for line in f:
@@ -120,11 +123,17 @@ def parse_jsonl(path: str, budget: int = 65536):
                     content = msg.get("content") if isinstance(msg, dict) else None
                     txt = text_of(content).strip()
                     if txt and not _is_internal(txt):
-                        first_user = txt
+                        full_cmds.append(txt)
                         saw_content = True
-                        break
+                        if not first_user:
+                            first_user = txt
+                            # 不 break：指令需要全序（前3+后3）
         except OSError:
             pass
+        if not cmds:
+            cmds = full_cmds
+        if not cmds_tail:
+            cmds_tail = full_cmds
     meta.title = re.sub(r"\s+", " ", (meta.custom_title[:80] or meta.ai_title[:80]
                         or meta.summary[:80] or first_user[:80]
                         or os.path.basename(path).removesuffix(".jsonl"))).strip() or "(空会话)"
@@ -308,7 +317,7 @@ def save_config(cfg: dict, home: str = ""):
 
 _CACHE_FIELDS = ("sid", "title", "cwd", "branch", "first_user", "last_reply",
                  "entrypoint", "first_cmds", "last_cmds")
-CACHE_VERSION = 17   # +1: 首尾指令分段收集（head/tail 重叠去重）   # +1: 新增首尾指令字段 first_cmds/last_cmds   # +1: last_reply 预算 500→4000   # +1: cwd realpath 归一符号链接   # +1: 标题链对齐官方（custom-title > ai-title > summary > 首问）   # +1: title 净化换行（多行 title 折行泄漏到边框外）   # +1: 隐藏 sdk-cli 衍生会话   # +1: 取消一切归组折叠，cwd=启动目录   # +1: 归组锚定 home 下前两级   # +1: 目录编码规则修正（_/./全压-，还原下划线真实路径）   # +1: worktree 启动折回主仓库   # +1: cwd 改为编码目录名反推的真实启动目录   # +1: 首问流式兜底   # 解析语义变更（黑名单等）时 +1，旧缓存条目整体失效
+CACHE_VERSION = 18   # +1: 首尾指令全扫兜底（compact 采样窗外）   # +1: 首尾指令分段收集（head/tail 重叠去重）   # +1: 新增首尾指令字段 first_cmds/last_cmds   # +1: last_reply 预算 500→4000   # +1: cwd realpath 归一符号链接   # +1: 标题链对齐官方（custom-title > ai-title > summary > 首问）   # +1: title 净化换行（多行 title 折行泄漏到边框外）   # +1: 隐藏 sdk-cli 衍生会话   # +1: 取消一切归组折叠，cwd=启动目录   # +1: 归组锚定 home 下前两级   # +1: 目录编码规则修正（_/./全压-，还原下划线真实路径）   # +1: worktree 启动折回主仓库   # +1: cwd 改为编码目录名反推的真实启动目录   # +1: 首问流式兜底   # 解析语义变更（黑名单等）时 +1，旧缓存条目整体失效
 
 class Cache:
     def __init__(self, ccs_home: str):
