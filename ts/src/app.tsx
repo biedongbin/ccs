@@ -260,7 +260,14 @@ export function CcsApp(props: Props) {
     if (lc.length && !shown.includes(lc[0])) shown.push("⋯", ...lc);   // 总数>6：中间省略
     else for (const c of lc) if (!shown.includes(c)) shown.push(c);
     out.push(bar, { text: T("first_q"), kind: "lab" });
-    for (const c of shown) out.push({ text: "> " + (mdLines(c, width)[0] ?? ""), kind: "val" });
+    for (const c of shown) {                        // 指令可含换行：整条全行渲染，续行缩进
+      const cl = mdLines(c, width);
+      if (!cl.length) out.push({ text: "> (空)", kind: "val" });
+      else {
+        out.push({ text: "> " + cl[0], kind: "val" });
+        for (const t of cl.slice(1)) out.push({ text: "  " + t, kind: "val" });
+      }
+    }
     out.push(bar, { text: T("last_a"), kind: "lab" });
     for (const ln of mdLines(m.last_reply || T("none"), width)) out.push({ text: ln, kind: "val" });
     return out;

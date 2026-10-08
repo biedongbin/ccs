@@ -854,9 +854,12 @@ def _detail_lines(m, width, sums=None):
         shown += ["⋯"] + lc
     elif lc:
         shown += [c for c in lc if c not in shown]
-    lines += bar + [[(T("first_q"), lab)]] \
-        + [[("> " + t, 0)] for c in shown for t in (_md_lines(c, width)[:1] or [""])] \
-        + bar + [[(T("last_a"), lab)]] \
+    lines += bar + [[(T("first_q"), lab)]]
+    for c in shown:                                  # 指令可含换行：整条全行渲染，续行缩进
+        cl = _md_lines(c, width) or ["(空)"]
+        lines.append([("> " + cl[0], 0)])
+        lines += [[("  " + t, 0)] for t in cl[1:]]
+    lines += bar + [[(T("last_a"), lab)]] \
         + [[(t, 0)] for t in _md_lines(m.last_reply or T("none"), width)]
     return lines
 

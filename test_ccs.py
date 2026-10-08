@@ -325,6 +325,15 @@ def test_skill_boilerplate_and_tail_silent():
     assert m.last_cmds == ["第一条真人指令", "第二条真人指令"], m.last_cmds  # 单侧空触发兜底；全序只有2条则 last=全部
 
 
+def test_multiline_cmd_rendered_full():
+    """多行指令整条渲染：首行 > 前缀，续行缩进——不再只显示第一行。"""
+    m = ccs.SessionMeta(sid="s", title="t", cwd="/w")
+    m.first_cmds = []
+    m.last_cmds = ["目标：\n1. 完成分析\n2. 输出报告"]
+    texts = [seg[0] for row in ccs._detail_lines(m, 60) for seg in row]
+    assert "> 目标：" in texts and "  1. 完成分析" in texts and "  2. 输出报告" in texts, texts[:14]
+
+
 def test_first_last_cmds():
     """首尾指令：前3 + 省略 + 后3；总数≤6 时去重拼接。"""
     td, proj, arch = _fake_tree()
