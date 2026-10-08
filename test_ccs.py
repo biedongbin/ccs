@@ -325,6 +325,31 @@ def test_skill_boilerplate_and_tail_silent():
     assert m.last_cmds == ["第一条真人指令", "第二条真人指令"], m.last_cmds  # 单侧空触发兜底；全序只有2条则 last=全部
 
 
+def test_content_search_fulltext():
+    """内容搜索=全文：所有指令（all_cmds>前3后3）+ AI 总结 + 最后回复。"""
+    td, proj, arch = _fake_tree()
+    f = os.path.join(proj, "ft.jsonl")
+    lines = []
+    for i in range(1, 12):                          # 11 条指令：前3/后3 不含第5条，all_cmds 应含
+        lines.append(user_line(f"sid-ft", "/w/projA", f"常规指令{i}"))
+        lines.append(asst_line("sid-ft", "答复"))
+    lines.append(user_line("sid-ft", "/w/projA", "部署K8S集群的特殊指令"))
+    lines.append(asst_line("sid-ft", "已完成部署 K8S"))
+    write_jsonl(f, lines)
+    m = ccs.parse_jsonl(f)
+    assert "部署K8S集群的特殊指令" in m.all_cmds      # 全量域有（前3+后3 没有）
+    st = ccs.AppState([m])
+    st.query, st.content = "k8s", True
+    assert [x.sid for x in st.visible()] == ["sid-ft"]   # 大小写不敏感命中全量指令
+    st.query = "部署 K8S"
+    assert [x.sid for x in st.visible()] == ["sid-ft"]   # 子串连续匹配
+    st.query = "答复"
+    assert [x.sid for x in st.visible()] == []            # assistant 正文不在域（最后输出=last_reply 才在）
+    st.sums = {"sid-ft": {"text": "AI 分析提到回滚方案", "ts": 1}}
+    st.query = "回滚"
+    assert [x.sid for x in st.visible()] == ["sid-ft"]    # AI 总结入域
+
+
 def test_content_search_and_semantic_filter():
     """? 内容搜索匹配域=首尾指令+最后回复；S 语义集过滤；/ 恢复三域。"""
     m1 = ccs.SessionMeta(sid="s1", title="标题A", cwd="/w/x", mtime=1)

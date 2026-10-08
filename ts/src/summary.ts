@@ -30,7 +30,7 @@ export function buildSemanticArgv(sessions: SessionMeta[], q: string): string[] 
   const items = cands.map((m) => ({
     sid: m.sid,
     title: m.title.slice(0, 80),
-    cmds: [...m.first_cmds, ...m.last_cmds].slice(0, 6).join(" / ").slice(0, 300),
+    cmds: (m.all_cmds && m.all_cmds.length ? m.all_cmds : [...m.first_cmds, ...m.last_cmds]).slice(0, 6).join(" / ").slice(0, 300),
   }));
   const prompt = ("你是会话检索器。下面是 Claude Code 会话清单(JSON)。找出与查询语义最相关的会话"
     + "（最多 20 个，宁缺毋滥）。只输出 JSON 字符串数组（元素=sid），不要任何其他文字。"

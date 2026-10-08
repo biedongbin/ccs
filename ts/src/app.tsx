@@ -69,7 +69,8 @@ export function CcsApp(props: Props) {
     return () => { stdout.removeListener("resize", onResize); };
   }, [stdout]);
 
-  // 可见行（Python AppState.visible 语义）
+  // 可见行（Python AppState.visible 语义；内容域=全文：all_cmds+AI 总结+last_reply）
+  const sumsForFilter = useMemo(() => (content ? loadSummaries() : {}), [content, sessions, msg]);
   const rows = useMemo(() => {
     const q = query.toLowerCase();
     return sessions.filter((m) => {
@@ -78,12 +79,14 @@ export function CcsApp(props: Props) {
       if (semantic !== null && !semantic.has(m.sid)) return false;
       if (!q) return true;
       if (content) {
-        const blob = [...m.first_cmds, ...m.last_cmds].join(" ") + " " + m.last_reply;
+        const cmds = (m.all_cmds && m.all_cmds.length ? m.all_cmds : [...(m.first_cmds || []), ...(m.last_cmds || [])]);
+        const ai = sumsForFilter[m.sid]?.text || m.summary || "";
+        const blob = cmds.join(" ") + " " + ai + " " + m.last_reply;
         return blob.toLowerCase().includes(q);
       }
       return (m.title + m.cwd + m.sid).toLowerCase().includes(q);
     });
-  }, [sessions, archiveView, project, query, content, semantic]);
+  }, [sessions, archiveView, project, query, content, semantic, sumsForFilter]);
   const n = rows.length;
   const cur = n ? rows[Math.min(cursor, n - 1)] : null;
   const H = size.h, W = size.w;

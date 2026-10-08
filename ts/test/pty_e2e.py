@@ -140,6 +140,8 @@ frame = run([], [b"S"])
 ok("6 S 语义输入提示", "语义:" in frame.replace(" ", ""))
 frame = run([])
 ok("6 帮助行含 ? 与 S 段", "?内容搜" in frame.replace(" ", "") and "S语义搜" in frame.replace(" ", ""))
+frame = run([], [b"?", "甲乙丙丁".encode()])          # 全文域：最后输出(last_reply=LONG_REPLY 含该串)命中
+ok("6 ? 全文命中末答正文", "修复登录问题" in frame.replace(" ", "") and "内容:甲乙丙丁" in frame.replace(" ", ""))
 
 print(f"\n{P} passed, {F} failed")
 sys.exit(1 if F else 0)

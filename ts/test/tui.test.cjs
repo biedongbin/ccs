@@ -140,14 +140,21 @@ ok("summary roundtrip", s2["sid-a"].text.length === 30 && s2["sid-a"].ts === 123
     sid, title, cwd: "/w/" + sid, branch: "", mtime, size: 1, path: "",
     first_user: "", last_reply: reply, summary: "", archived: false,
     entrypoint: "", custom_title: "", ai_title: "",
-    first_cmds: cmds, last_cmds: [],
+    first_cmds: cmds, last_cmds: [], all_cmds: cmds,
   });
-  const filter = (ss, q, content, semantic) => ss.filter((m) => {
-    if (semantic !== null && !semantic.has(m.sid)) return false;
-    if (!q) return true;
-    if (content) return ([...m.first_cmds, ...m.last_cmds].join(" ") + " " + m.last_reply).toLowerCase().includes(q.toLowerCase());
-    return (m.title + m.cwd + m.sid).toLowerCase().includes(q.toLowerCase());
-  });
+  const filter = (ss, q, content, semantic, sums) => {
+    const blobOf = (m) => {
+      const cmds = (m.all_cmds && m.all_cmds.length ? m.all_cmds : [...(m.first_cmds || []), ...(m.last_cmds || [])]);
+      const ai = (sums && sums[m.sid]?.text) || m.summary || "";
+      return cmds.join(" ") + " " + ai + " " + m.last_reply;
+    };
+    return ss.filter((m) => {
+      if (semantic !== null && !semantic.has(m.sid)) return false;
+      if (!q) return true;
+      if (content) return blobOf(m).toLowerCase().includes(q.toLowerCase());
+      return (m.title + m.cwd + m.sid).toLowerCase().includes(q.toLowerCase());
+    });
+  };
   const s1 = mk("s1", "标题A", ["部署流程文档"], "回滚方案", 100);
   const s2 = mk("s2", "标题B", ["别的"], "无关", 200);
   const ss = [s2, s1];
@@ -155,6 +162,29 @@ ok("summary roundtrip", s2["sid-a"].text.length === 30 && s2["sid-a"].ts === 123
   ok("内容搜索命中 first_cmds", filter(ss, "部署", true, null).map((m) => m.sid).join() === "s1");
   ok("三域搜索不搜内容", filter(ss, "回滚", false, null).length === 0);
   ok("语义集过滤", filter(ss, "", false, new Set(["s2"])).map((m) => m.sid).join() === "s2");
+  {                                    // 全文域：all_cmds 中段指令命中（前3后3外）+ AI 总结注入域
+    const s3 = mk("s3", "标题C", Array.from({length: 11}, (_, i) => `常规指令${i + 1}`), "答复", 300);
+    s3.all_cmds = [...s3.all_cmds, "部署K8S集群的特殊指令"];
+    s3.all_cmds = s3.all_cmds.slice(-81, -1).concat("部署K8S集群的特殊指令").slice(0, 80);
+    ok("全文命中中段指令(前3后3外)", filter([s3], "k8s", true, null).map((m) => m.sid).join() === "s3");
+    ok("AI 总结入域(注入)", filter([s3], "回滚方案分析", true, null, { s3: { text: "AI 分析提到回滚方案分析", ts: 1 } }).map((m) => m.sid).join() === "s3");
+    s3.summary = "meta摘要域兜底";      // meta.summary 兜底域（sums 无该 sid 时）
+    ok("无注入时退 meta.summary", filter([s3], "meta摘要", true, null).map((m) => m.sid).join() === "s3");
+    // all_cmds 域语义：first3/last3 检查（数据层）
+    const { parseJsonl } = require("../dist/parse");
+    const td = fs.mkdtempSync("/tmp/ccs_ft_");
+    const f = path.join(td, "ft.jsonl");
+    const lines = [];
+    for (let i = 1; i <= 11; i++) {
+      lines.push(JSON.stringify({ type: "user", sessionId: "sid-ft", cwd: "/w", message: { role: "user", content: `常规指令${i}` } }));
+      lines.push(JSON.stringify({ type: "assistant", sessionId: "sid-ft", message: { role: "assistant", content: [{ type: "text", text: "答复" }] } }));
+    }
+    lines.push(JSON.stringify({ type: "user", sessionId: "sid-ft", cwd: "/w", message: { role: "user", content: "部署K8S集群的特殊指令" } }));
+    fs.writeFileSync(f, lines.join("\n") + "\n");
+    const meta = parseJsonl(f).meta;
+    ok("all_cmds 含 tail 窗指令+中段", meta.all_cmds.some((c) => c.includes("常规指令1")) && meta.all_cmds.some((c) => c.includes("常规指令11")));
+    ok("all_cmds ≤80×200", meta.all_cmds.length <= 80 && meta.all_cmds.every((c) => c.length <= 200));
+  }
   const { semanticCandidates, buildSemanticArgv } = require("../dist/summary");
   const now = Date.now() / 1000;
   const fresh = mk("f", "t", [], "", now - 86400);

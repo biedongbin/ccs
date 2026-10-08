@@ -20,6 +20,7 @@ class SessionMeta:
     first_user: str = ""; last_reply: str = ""; summary: str = ""
     first_cmds: list = field(default_factory=list)   # 用户指令前3（采样窗内）
     last_cmds: list = field(default_factory=list)    # 用户指令后3（采样窗内）
+    all_cmds: list = field(default_factory=list)     # 全量用户指令（≤80 条×200 字符）：内容搜索域
     archived: bool = False
     entrypoint: str = ""    # sdk-cli = compact/SDK 衍生会话（默认隐藏）
     custom_title: str = ""  # /rename 写入，官方 picker 最高优先
@@ -54,6 +55,7 @@ def parse_jsonl(path: str, budget: int = 65536):
     first_user = ""; last_reply = ""; saw_content = False
     cmds = []                      # head 段指令（时间序）：前3入 meta
     cmds_tail = []                 # tail 段指令（时间序）：后3入 meta——head/tail 分段收集，重叠区不重复
+    all_cmds_acc = []              # head 窗内全量（长会话 tail 窗的指令去重并入 meta.all_cmds）
     def feed(line: bytes, part="head"):
         nonlocal first_user, last_reply, saw_content
         try:
@@ -86,7 +88,11 @@ def parse_jsonl(path: str, budget: int = 65536):
             txt = text_of(content).strip()
             if txt and not _is_internal(txt):
                 saw_content = True
-                (cmds if part == "head" else cmds_tail).append(txt)
+                if part == "head":
+                    cmds.append(txt)
+                else:
+                    cmds_tail.append(txt)
+                    all_cmds_acc.append(txt)   # tail 窗指令也是全量的一员（head 窗外的指令大多在这）
                 if not first_user:
                     first_user = txt
         elif t == "assistant":
@@ -135,12 +141,21 @@ def parse_jsonl(path: str, budget: int = 65536):
             cmds = full_cmds
         if not cmds_tail:
             cmds_tail = full_cmds
+        if not all_cmds_acc:
+            all_cmds_acc = full_cmds
     meta.title = re.sub(r"\s+", " ", (meta.custom_title[:80] or meta.ai_title[:80]
                         or meta.summary[:80] or first_user[:80]
                         or os.path.basename(path).removesuffix(".jsonl"))).strip() or "(空会话)"
     meta.first_user, meta.last_reply = first_user[:500], last_reply[:4000]   # 末答放宽：详情栏主浏览区，500 严重截断
     meta.first_cmds = [c[:200] for c in cmds[:3]]
     meta.last_cmds = [c[:200] for c in cmds_tail[-3:]]
+    # 全量指令域：head/tail 任一窗覆盖到的指令都有；小文件双窗重叠时以长者为准（去重保序）
+    merged, seen = [], set()
+    for c in (cmds + all_cmds_acc):               # head 全序 + tail 窗指令（重叠去重保序）
+        if c not in seen:
+            seen.add(c)
+            merged.append(c)
+    meta.all_cmds = [c[:200] for c in merged[:80]]
     enc = os.path.basename(os.path.dirname(path))
     # 启动目录=编码目录还原，从哪打开归哪；realpath 归一符号链接（/tmp→/private/tmp 类）
     _cwd0 = launch_dir(enc, meta.cwd) or meta.cwd
@@ -328,8 +343,8 @@ def save_config(cfg: dict, home: str = ""):
     os.replace(tmp, config_path(h))
 
 _CACHE_FIELDS = ("sid", "title", "cwd", "branch", "first_user", "last_reply",
-                 "entrypoint", "first_cmds", "last_cmds")
-CACHE_VERSION = 19   # +1: Base-directory skill 样板过滤 + 兜底单侧触发   # +1: 首尾指令全扫兜底（compact 采样窗外）   # +1: 首尾指令分段收集（head/tail 重叠去重）   # +1: 新增首尾指令字段 first_cmds/last_cmds   # +1: last_reply 预算 500→4000   # +1: cwd realpath 归一符号链接   # +1: 标题链对齐官方（custom-title > ai-title > summary > 首问）   # +1: title 净化换行（多行 title 折行泄漏到边框外）   # +1: 隐藏 sdk-cli 衍生会话   # +1: 取消一切归组折叠，cwd=启动目录   # +1: 归组锚定 home 下前两级   # +1: 目录编码规则修正（_/./全压-，还原下划线真实路径）   # +1: worktree 启动折回主仓库   # +1: cwd 改为编码目录名反推的真实启动目录   # +1: 首问流式兜底   # 解析语义变更（黑名单等）时 +1，旧缓存条目整体失效
+                 "entrypoint", "first_cmds", "last_cmds", "all_cmds")
+CACHE_VERSION = 20   # +1: all_cmds 全量指令域（内容搜索）   # +1: 首尾指令全扫兜底（compact 采样窗外）   # +1: 首尾指令分段收集（head/tail 重叠去重）   # +1: 新增首尾指令字段 first_cmds/last_cmds   # +1: last_reply 预算 500→4000   # +1: cwd realpath 归一符号链接   # +1: 标题链对齐官方（custom-title > ai-title > summary > 首问）   # +1: title 净化换行（多行 title 折行泄漏到边框外）   # +1: 隐藏 sdk-cli 衍生会话   # +1: 取消一切归组折叠，cwd=启动目录   # +1: 归组锚定 home 下前两级   # +1: 目录编码规则修正（_/./全压-，还原下划线真实路径）   # +1: worktree 启动折回主仓库   # +1: cwd 改为编码目录名反推的真实启动目录   # +1: 首问流式兜底   # 解析语义变更（黑名单等）时 +1，旧缓存条目整体失效
 
 class Cache:
     def __init__(self, ccs_home: str):
@@ -636,6 +651,7 @@ class AppState:
         self.content = False        # ? 内容搜索：匹配域换为首尾指令+最后回复
         self.semantic = None        # S 语义命中集（set[sid]，None=未启用）
         self.sem_q = ""             # 语义查询原文（徽章显示）
+        self.sums = None            # AI 总结索引（TUI 注入，内容搜索域）
 
     def visible(self):
         q = self.query.lower()
@@ -649,7 +665,9 @@ class AppState:
                 continue
             if q:
                 if self.content:
-                    blob = " ".join(m.first_cmds + m.last_cmds) + " " + m.last_reply
+                    blob = " ".join(m.all_cmds or (m.first_cmds + m.last_cmds)) \
+                        + " " + (self.sums.get(m.sid, {}).get("text", "") if self.sums else (m.summary or "")) \
+                        + " " + m.last_reply
                     if q not in blob.lower():
                         continue
                 elif q not in (m.title + m.cwd + m.sid).lower():
@@ -1369,6 +1387,7 @@ def main(argv) -> int:
     def curses_main(stdscr):
         nonlocal st
         msg = ""
+        st.sums = load_summaries()   # 内容搜索域含 AI 总结（s 完成时随 poll 刷新）
         off = 0          # 左栏列表滚动偏移
         dscroll = 0      # 右栏详情滚动偏移
         last_sid = None
@@ -1419,6 +1438,7 @@ def main(argv) -> int:
                     sums0 = load_summaries()
                     sums0[sid] = {"text": out[:20000], "ts": _time.time()}
                     save_summaries(sums0)
+                    st.sums = sums0
                     msg = T("sum_done").format(t=jb["title"][:24])
                 else:
                     msg = T("sum_fail").format(t=jb["title"][:24])

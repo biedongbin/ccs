@@ -95,7 +95,7 @@ First launch with no `~/.ccs/config.json` runs a guided setup for language and t
 |---|---|
 | ↑/↓ | move |
 | `/` | search (title / project path / session ID, case-insensitive) |
-| `?` | content search (first/last commands + last reply body) |
+| `?` | full-text content search (all user commands in the session + AI summary + last reply) |
 | `S` | AI semantic search: type natural language, a background `claude -p` matches the current list semantically (last 15 days by default; a time range in the query lifts the window), filters the list to matches; `Esc` clears |
 | Tab | project filter picker (Enter confirm, Esc cancel) |
 | Enter | resume in place: chdir to the session's original directory and exec (template configurable via `resume_cmd`) |

@@ -30,6 +30,7 @@ export interface SessionMeta {
   last_reply: string;
   first_cmds: string[];   // 用户指令前3（采样窗内，对齐 Python v16）
   last_cmds: string[];    // 用户指令后3
+  all_cmds: string[];     // 全量用户指令域（≤80 条×200 字符）：内容搜索（v20）
   summary: string;
   archived: boolean;
   entrypoint: string;
@@ -96,13 +97,14 @@ export function parseJsonl(p: string, budget = 65536): Parsed {
   const meta: SessionMeta = {
     sid: "", title: "", cwd: "", branch: "",
     mtime: st.mtimeMs / 1000, size: st.size, path: p,   // Python st_mtime 为秒
-    first_user: "", last_reply: "", summary: "", first_cmds: [], last_cmds: [],
+    first_user: "", last_reply: "", summary: "", first_cmds: [], last_cmds: [], all_cmds: [],
     archived: false, entrypoint: "", custom_title: "", ai_title: "",
   };
   let firstUser = "";
   let lastReply = "";
   const cmds: string[] = [];            // head 段指令：前3（v17 分段收集，重叠区不重复）
   const cmdsTail: string[] = [];        // tail 段指令：后3
+  const cmdsAcc: string[] = [];         // tail 窗内全量指令（并入 all_cmds）
   let sawContent = false;
   let nlines = 0;
 
@@ -131,7 +133,11 @@ export function parseJsonl(p: string, budget = 65536): Parsed {
       const txt = textOf(content).trim();
       if (txt && !isInternal(txt)) {
         sawContent = true;
-        (part === "head" ? cmds : cmdsTail).push(txt);
+        if (part === "head") cmds.push(txt);
+        else {
+          cmdsTail.push(txt);
+          cmdsAcc.push(txt);
+        }
         if (!firstUser) firstUser = txt;
       }
     } else if (t === "assistant") {
@@ -217,6 +223,7 @@ export function parseJsonl(p: string, budget = 65536): Parsed {
     }
     if (!cmds.length) cmds.push(...fullCmds.slice(0, 3));          // 全扫兜底回填（采样窗内已有则不覆盖）
     if (!cmdsTail.length) cmdsTail.push(...fullCmds.slice(-3));
+    if (!cmdsAcc.length) cmdsAcc.push(...fullCmds);                 // 兜底结果也进全量域
   }
 
   const chain = [
@@ -233,6 +240,17 @@ export function parseJsonl(p: string, budget = 65536): Parsed {
   meta.last_reply = lastReply.slice(0, 4000);
   meta.first_cmds = cmds.slice(0, 3).map((c) => c.slice(0, 200));
   meta.last_cmds = cmdsTail.slice(-3).map((c) => c.slice(0, 200));
+  {
+    const merged: string[] = [];
+    const seen = new Set<string>();
+    for (const c of [...cmds, ...cmdsAcc]) {
+      if (!seen.has(c)) {
+        seen.add(c);
+        merged.push(c);
+      }
+    }
+    meta.all_cmds = merged.slice(0, 80).map((c) => c.slice(0, 200));
+  }
 
   const enc = path.basename(path.dirname(p));
   const cwd0 = launchDir(enc, meta.cwd) || meta.cwd;

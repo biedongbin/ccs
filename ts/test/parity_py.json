@@ -10,6 +10,9 @@
   "parse": {
     "ai-title.jsonl": {
       "ai_title": "新标题赢",
+      "all_cmds": [
+        "问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -33,6 +36,9 @@
     },
     "arch1.jsonl": {
       "ai_title": "",
+      "all_cmds": [
+        "归档会话"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -56,6 +62,7 @@
     },
     "badline.jsonl": {
       "ai_title": "",
+      "all_cmds": [],
       "archived": false,
       "branch": "",
       "custom_title": "",
@@ -75,6 +82,9 @@
     },
     "bigfile.jsonl": {
       "ai_title": "",
+      "all_cmds": [
+        "采样窗外的真实首问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -98,6 +108,9 @@
     },
     "custom-ai.jsonl": {
       "ai_title": "AI 标题",
+      "all_cmds": [
+        "首问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "人改标题",
@@ -121,6 +134,9 @@
     },
     "custom-title.jsonl": {
       "ai_title": "",
+      "all_cmds": [
+        "首问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "官方改名",
@@ -144,6 +160,9 @@
     },
     "infile-summary.jsonl": {
       "ai_title": "",
+      "all_cmds": [
+        "第一问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -167,6 +186,9 @@
     },
     "internal.jsonl": {
       "ai_title": "",
+      "all_cmds": [
+        "真正的第一个问题"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -190,6 +212,9 @@
     },
     "longreply.jsonl": {
       "ai_title": "",
+      "all_cmds": [
+        "问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -213,6 +238,9 @@
     },
     "multiline.jsonl": {
       "ai_title": "",
+      "all_cmds": [
+        "第一行\n\n第二行 内容"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -236,6 +264,9 @@
     },
     "normal.jsonl": {
       "ai_title": "",
+      "all_cmds": [
+        "修复登录bug"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -259,6 +290,9 @@
     },
     "nosid.jsonl": {
       "ai_title": "",
+      "all_cmds": [
+        "没有sessionId的首问"
+      ],
       "archived": false,
       "branch": "",
       "custom_title": "",
@@ -282,6 +316,9 @@
     },
     "nullmsg.jsonl": {
       "ai_title": "",
+      "all_cmds": [
+        "真实首问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -305,6 +342,9 @@
     },
     "sdk-cli.jsonl": {
       "ai_title": "",
+      "all_cmds": [
+        "SDK 衍生会话"
+      ],
       "archived": false,
       "branch": "",
       "custom_title": "",
@@ -333,6 +373,9 @@
     },
     "sidedef.jsonl": {
       "ai_title": "",
+      "all_cmds": [
+        "真实首问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -358,6 +401,9 @@
   "scan": [
     {
       "ai_title": "",
+      "all_cmds": [
+        "采样窗外的真实首问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -380,6 +426,9 @@
     },
     {
       "ai_title": "",
+      "all_cmds": [
+        "归档会话"
+      ],
       "archived": true,
       "branch": "master",
       "custom_title": "",
@@ -402,6 +451,9 @@
     },
     {
       "ai_title": "",
+      "all_cmds": [
+        "问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -424,6 +476,9 @@
     },
     {
       "ai_title": "",
+      "all_cmds": [
+        "没有sessionId的首问"
+      ],
       "archived": false,
       "branch": "",
       "custom_title": "",
@@ -446,6 +501,9 @@
     },
     {
       "ai_title": "",
+      "all_cmds": [
+        "第一行\n\n第二行 内容"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -468,6 +526,9 @@
     },
     {
       "ai_title": "",
+      "all_cmds": [
+        "真实首问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -490,6 +551,7 @@
     },
     {
       "ai_title": "",
+      "all_cmds": [],
       "archived": false,
       "branch": "",
       "custom_title": "",
@@ -508,6 +570,9 @@
     },
     {
       "ai_title": "AI 标题",
+      "all_cmds": [
+        "首问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "人改标题",
@@ -530,6 +595,9 @@
     },
     {
       "ai_title": "",
+      "all_cmds": [
+        "首问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "官方改名",
@@ -552,6 +620,9 @@
     },
     {
       "ai_title": "新标题赢",
+      "all_cmds": [
+        "问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -574,6 +645,9 @@
     },
     {
       "ai_title": "",
+      "all_cmds": [
+        "第一问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -596,6 +670,9 @@
     },
     {
       "ai_title": "",
+      "all_cmds": [
+        "真实首问"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -618,6 +695,9 @@
     },
     {
       "ai_title": "",
+      "all_cmds": [
+        "真正的第一个问题"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
@@ -640,6 +720,9 @@
     },
     {
       "ai_title": "",
+      "all_cmds": [
+        "修复登录bug"
+      ],
       "archived": false,
       "branch": "master",
       "custom_title": "",
