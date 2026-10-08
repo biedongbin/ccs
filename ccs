@@ -616,6 +616,46 @@ try:
 except ImportError:            # Windows 标准库无 curses；装 windows-curses 后可跑
     curses = None
 
+_ESC_SEQ = {"[A": "KEY_UP", "[B": "KEY_DOWN", "[C": "KEY_RIGHT", "[D": "KEY_LEFT",
+             "[H": "KEY_HOME", "[F": "KEY_END", "OH": "KEY_HOME", "OF": "KEY_END",
+             "[5~": "KEY_PPAGE", "[6~": "KEY_NPAGE", "[15~": "KEY_F(5)", "[13~": "KEY_F(3)",
+             "[1~": "KEY_HOME", "[4~": "KEY_END"}
+
+def _read_key(stdscr):
+    """get_wch 宽字符 + 转义序列组装。get_wch 不做 keypad 组装（\x1b[B 拆成裸 ESC+[+B，
+    方向/翻页/F5 全退化成单字符），此处收 ESC 后短窗非阻塞取续，映射回功能键名。"""
+    try:
+        k = stdscr.get_wch()
+    except curses.error:
+        return ""
+    if not isinstance(k, str):
+        return curses.keyname(k).decode()
+    if k != "\x1b":
+        return k
+    seq = ""
+    stdscr.nodelay(True)
+    for _ in range(8):
+        try:
+            c = stdscr.get_wch()
+        except curses.error:
+            _time.sleep(0.004)
+            try:
+                c = stdscr.get_wch()
+            except curses.error:
+                break
+        if not isinstance(c, str):
+            seq = "\x1b" + seq
+            break
+        if c == "\x1b":
+            break
+        seq += c
+        if len(seq) >= 2 and seq[-1].isalpha():
+            break
+    stdscr.nodelay(False)
+    if not seq:
+        return "ESC"                      # 独立 Esc 键
+    return _ESC_SEQ.get(seq, "\x1b" + seq)   # 未知序列原样（不可打印，不进查询串）
+
 def _safe_add(win, y, x, s, *a):
     try:
         win.addstr(y, x, s, *a)
@@ -991,7 +1031,7 @@ def _detail_page(stdscr, cfg, title, desc, items,
         _safe_add(stdscr, H - 1, 0, keys[:W - 1], curses.A_DIM)
         stdscr.refresh()
         try:
-            k = stdscr.get_wch()
+            k = _read_key(stdscr)
         except curses.error:
             continue
         if isinstance(k, int):
@@ -1034,7 +1074,7 @@ def _config_input(stdscr, y, x, w, initial=""):
             pass
         stdscr.refresh()
         try:
-            k = stdscr.get_wch()
+            k = _read_key(stdscr)
         except curses.error:
             continue
         if isinstance(k, int):
@@ -1119,7 +1159,7 @@ def _config_tui(stdscr, cfg: dict):
                   curses.A_DIM)
         stdscr.refresh()
         try:
-            k = stdscr.get_wch()
+            k = _read_key(stdscr)
         except curses.error:
             continue
         if isinstance(k, int):
@@ -1415,7 +1455,7 @@ def main(argv) -> int:
                 pwin.refresh()
             stdscr.timeout(500 if JOBS else -1)   # 无后台任务时阻塞等键：空闲零重绘（消闪烁）；有任务时半秒轮询
             try:
-                k = stdscr.get_wch()                 # 宽字符读取：CJK 整字返回，杜绝字节级乱码
+                k = _read_key(stdscr)            # 宽字符+转义组装：CJK 整字 + 方向键/翻页/F5
             except curses.error:
                 continue
             if isinstance(k, int):                   # 功能键 → "KEY_xxx" 名，兼容既有分支
@@ -1460,6 +1500,10 @@ def main(argv) -> int:
                     off = 0
                 elif k in ("\n", "KEY_ENTER"):
                     searching = False
+                elif k == "KEY_UP":               # 结果间浏览：方向键非打印、不冲突查询输入
+                    st.move(-1)
+                elif k == "KEY_DOWN":
+                    st.move(1)
                 elif k in ("\x7f", "\b", "KEY_BACKSPACE"):
                     st.query = st.query[:-1]
                     st.cursor = 0

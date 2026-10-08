@@ -110,6 +110,8 @@ export function CcsApp(props: Props) {
     if (mode.k === "search") {
       if (key.escape) { setQuery(""); setCursor(0); setMode({ k: "list" }); }
       else if ((key.return || input === "\n")) setMode({ k: "list" });
+      else if (key.upArrow) setCursor((c) => Math.max(0, c - 1));            // 结果间浏览（j/k 仍作输入）
+      else if (key.downArrow) setCursor((c) => Math.min(rows.length - 1, c + 1));
       else if (key.backspace || key.delete) { setQuery((q) => q.slice(0, -1)); setCursor(0); }
       else if (input && !key.ctrl && !key.meta) { setQuery((q) => q + input); setCursor(0); }
       return;
