@@ -59,7 +59,10 @@ ok("no orphan tiny segment line", ls.every((l) => l.replace(/\s/g, "").length >=
 // 4. i18n：10 语言 + 回退链
 const { T, setLang } = require("../dist/i18n");
 setLang("ja");
-ok("ja help loaded", T("help").includes("選択") || T("help").includes("jk"));
+ok("ja help loaded", T("help").includes("↑↓") || T("help").includes("検索"));
+ok("ja 新六键在表", T("search_c") === "内容: " && T("sem_p") === "意味: " && T("badge_sem").includes("意味"));
+setLang("zh");
+ok("zh 内容/语义键", T("search_c") === "内容: " && T("sem_p") === "语义: " && T("sem_done").includes("{n}"));
 setLang("xx");
 ok("unknown lang falls back", T("help").length > 0);
 setLang("zh");
@@ -126,9 +129,43 @@ ok("summary roundtrip", s2["sid-a"].text.length === 30 && s2["sid-a"].ts === 123
   ]);
   const r2 = parseJsonl(C);
   const m2 = r2.kind === "meta" ? r2.meta : null;
-  // ponytail: 小文件 head/tail 双采样重复计数（cmds=[A,B,A,B]，与 Python 逐字节一致）；
-  // 行级去重属解析语义变更，须两版同步改
-  ok("双采样语义对齐 Python", !!m2 && m2.first_cmds.join() === "A,B,A" && m2.last_cmds.join() === "B,A,B");
+  // v17 分段收集：first 只收 head 段、last 只收 tail 段——小文件重叠不再重复（[A,B] 而非 [A,B,A]）
+  ok("双采样分段收集（重叠去重）", !!m2 && m2.first_cmds.join() === "A,B" && m2.last_cmds.join() === "A,B");
+}
+
+// ---- 9. 内容搜索 / 语义集 / 候选窗口 ----
+{
+  // 过滤逻辑复刻 app.tsx rows 语义做纯函数断言
+  const mk = (sid, title, cmds, reply, mtime) => ({
+    sid, title, cwd: "/w/" + sid, branch: "", mtime, size: 1, path: "",
+    first_user: "", last_reply: reply, summary: "", archived: false,
+    entrypoint: "", custom_title: "", ai_title: "",
+    first_cmds: cmds, last_cmds: [],
+  });
+  const filter = (ss, q, content, semantic) => ss.filter((m) => {
+    if (semantic !== null && !semantic.has(m.sid)) return false;
+    if (!q) return true;
+    if (content) return ([...m.first_cmds, ...m.last_cmds].join(" ") + " " + m.last_reply).toLowerCase().includes(q.toLowerCase());
+    return (m.title + m.cwd + m.sid).toLowerCase().includes(q.toLowerCase());
+  });
+  const s1 = mk("s1", "标题A", ["部署流程文档"], "回滚方案", 100);
+  const s2 = mk("s2", "标题B", ["别的"], "无关", 200);
+  const ss = [s2, s1];
+  ok("内容搜索命中 last_reply", filter(ss, "回滚", true, null).map((m) => m.sid).join() === "s1");
+  ok("内容搜索命中 first_cmds", filter(ss, "部署", true, null).map((m) => m.sid).join() === "s1");
+  ok("三域搜索不搜内容", filter(ss, "回滚", false, null).length === 0);
+  ok("语义集过滤", filter(ss, "", false, new Set(["s2"])).map((m) => m.sid).join() === "s2");
+  const { semanticCandidates, buildSemanticArgv } = require("../dist/summary");
+  const now = Date.now() / 1000;
+  const fresh = mk("f", "t", [], "", now - 86400);
+  const stale = mk("o", "t", [], "", now - 20 * 86400);
+  ok("候选默认 15 天窗", semanticCandidates([fresh, stale], "找点东西").map((m) => m.sid).join() === "f");
+  ok("查询含时间范围放开", semanticCandidates([fresh, stale], "找 30天 前的").length === 2);
+  const argv = buildSemanticArgv([fresh, stale], "部署相关");   // 候选<全集 → 才标注 15 天窗口（Python 同语义）
+  ok("语义 prompt 含清单/查询/窗口", argv[0] === "claude" && argv[1] === "-p" && argv[2].includes("部署相关")
+     && argv[2].includes('"sid":"f"') && !argv[2].includes('"sid":"o"') && argv[2].includes("最近 15 天"));
+  const argv2 = buildSemanticArgv([fresh], "部署相关");           // 全集都在窗内 → 无窗口标注
+  ok("无窗口标注场景", argv2[2].includes('"sid":"f"') && !argv2[2].includes("最近 15 天"));
 }
 
 console.log(`${pass} M3 logic tests passed`);

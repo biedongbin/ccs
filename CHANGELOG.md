@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2 (2026-10-08)
+
+- **`?` content search**: searches the first/last commands and the last-reply body (plain `/` keeps searching title / project path / session ID).
+- **`S` AI semantic search**: type natural language; a background `claude -p` call matches the current list semantically and filters it to the matching sessions (badge shows the query, `Esc` clears). Candidates default to the **last 15 days** unless the query itself names a time range. Requires `claude` on PATH.
+- Search-results browsing with ↑/↓ while typing (both modes), and multi-line commands render in full in the detail pane.
+
 ## 1.1.1 (2026-10-08)
 
 - **Navigation keys simplified**: `j`/`k`/`J`/`K` bindings removed everywhere — movement is `↑`/`↓` only; detail-pane scrolling is PgUp/PgDn (full page). In search mode `j`/`k` remain plain input characters, and `↑`/`↓` browse the filtered results.

@@ -325,6 +325,35 @@ def test_skill_boilerplate_and_tail_silent():
     assert m.last_cmds == ["第一条真人指令", "第二条真人指令"], m.last_cmds  # 单侧空触发兜底；全序只有2条则 last=全部
 
 
+def test_content_search_and_semantic_filter():
+    """? 内容搜索匹配域=首尾指令+最后回复；S 语义集过滤；/ 恢复三域。"""
+    m1 = ccs.SessionMeta(sid="s1", title="标题A", cwd="/w/x", mtime=1)
+    m1.first_cmds = ["部署流程文档"]
+    m1.last_cmds, m1.last_reply = [], "回滚方案"
+    m2 = ccs.SessionMeta(sid="s2", title="标题B", cwd="/w/y", mtime=2)
+    m2.first_cmds = ["别的"]
+    m2.last_cmds, m2.last_reply = [], "无关"
+    st = ccs.AppState([m2, m1])
+    st.query = "回滚"
+    st.content = True
+    assert [m.sid for m in st.visible()] == ["s1"]          # 内容命中 s1 的 last_reply
+    st.content = False
+    assert [m.sid for m in st.visible()] == []                # 三域不含"回滚"→全滤
+    st2 = ccs.AppState([m2, m1])
+    st2.query = "回滚"
+    assert [m.sid for m in st2.visible()] == []              # 三域确实不搜内容
+    st2.query, st2.semantic = "", {"s2"}
+    assert [m.sid for m in st2.visible()] == ["s2"]          # 语义集过滤
+    # 候选窗口：mtime 15 天内
+    import time as _t
+    fresh = ccs.SessionMeta(sid="f", title="t", cwd="/w", mtime=_t.time() - 86400)
+    stale = ccs.SessionMeta(sid="o", title="t", cwd="/w", mtime=_t.time() - 20 * 86400)
+    got = ccs.semantic_candidates([fresh, stale], "找点东西")
+    assert [m.sid for m in got] == ["f"]
+    got2 = ccs.semantic_candidates([fresh, stale], "找 30天 前的东西")
+    assert {m.sid for m in got2} == {"f", "o"}                # 查询含时间范围→不强制
+
+
 def test_multiline_cmd_rendered_full():
     """多行指令整条渲染：首行 > 前缀，续行缩进——不再只显示第一行。"""
     m = ccs.SessionMeta(sid="s", title="t", cwd="/w")

@@ -8,13 +8,49 @@ import * as path from "path";
 import type { SessionMeta } from "./parse.js";
 import { ccsHome } from "./config.js";
 
-/** sid -> {proc, out, title}；随进程退出即弃，孤儿输出由 harvest 兜底。 */
+/** key -> {proc, out, title, kind}；kind: "summary" | "semantic"；随进程退出即弃。 */
 export interface Job {
   proc: ReturnType<typeof spawn>;
   out: string;
   title: string;
+  kind?: "summary" | "semantic";
 }
 export const JOBS = new Map<string, Job>();
+
+/** 语义候选：默认限最近 15 天；查询自带时间范围（N天/日/周/月/hour/day/week/month）则信任用户表达。 */
+export function semanticCandidates(sessions: SessionMeta[], q: string): SessionMeta[] {
+  if (/\d+\s*(天|日|周|月|小时|个?月|hour|day|week|month)/.test(q)) return sessions.slice(0, 100);
+  const cut = Date.now() / 1000 - 15 * 86400;
+  return sessions.filter((m) => m.mtime >= cut).slice(0, 100);
+}
+
+export function buildSemanticArgv(sessions: SessionMeta[], q: string): string[] {
+  const cands = semanticCandidates(sessions, q);
+  const window = cands.length < Math.min(sessions.length, 100) || !sessions.length ? "（范围：最近 15 天）" : "";
+  const items = cands.map((m) => ({
+    sid: m.sid,
+    title: m.title.slice(0, 80),
+    cmds: [...m.first_cmds, ...m.last_cmds].slice(0, 6).join(" / ").slice(0, 300),
+  }));
+  const prompt = ("你是会话检索器。下面是 Claude Code 会话清单(JSON)。找出与查询语义最相关的会话"
+    + "（最多 20 个，宁缺毋滥）。只输出 JSON 字符串数组（元素=sid），不要任何其他文字。"
+    + window + "\n清单: " + JSON.stringify(items) + "\n查询: " + q);
+  return ["claude", "-p", prompt];
+}
+
+export function startSemantic(sessions: SessionMeta[], q: string): boolean {
+  const d = path.join(ccsHome(), "summarize");
+  fs.mkdirSync(d, { recursive: true });
+  const outp = path.join(d, "semantic.out");
+  const argv = buildSemanticArgv(sessions, q);
+  try {
+    const fd = fs.openSync(outp, "w");
+    const proc = spawn(argv[0], argv.slice(1), { stdio: ["ignore", fd, "ignore"] });
+    fs.closeSync(fd);                                 // spawn 已 dup，父侧关闭（R4-1 同课）
+    JOBS.set("__semantic__", { proc, out: outp, title: q.slice(0, 24), kind: "semantic" });
+    return true;
+  } catch { return false; }
+}
 
 export function summariesPath(): string {
   return path.join(ccsHome(), "summaries.json");
@@ -67,7 +103,7 @@ export function startSummary(m: SessionMeta): boolean {
   }
 }
 
-export interface SumEvent { sid: string; ok: boolean; title: string }
+export interface SumEvent { sid: string; ok: boolean; title: string; kind?: "summary" | "semantic"; sids?: string[] }
 
 /** 收割退出进程：rc==0 且有输出 → summaries.json（text≤20000）。返回事件供 TUI 显示。 */
 export function pollJobs(): SumEvent[] {
@@ -80,6 +116,20 @@ export function pollJobs(): SumEvent[] {
       out = fs.readFileSync(jb.out, "utf-8").trim();
     } catch { /* OSError → "" */ }
     const ok = jb.proc.exitCode === 0 && out.length > 0;
+    if (jb.kind === "semantic") {                     // 语义任务：输出 [..sid..] JSON 数组，不落 summaries
+      const sids: string[] = [];
+      if (ok) {
+        const lo = out.indexOf("["), hi = out.lastIndexOf("]");
+        if (lo >= 0 && hi > lo) {
+          try {
+            const v = JSON.parse(out.slice(lo, hi + 1));
+            if (Array.isArray(v)) sids.push(...v.filter((x) => typeof x === "string"));
+          } catch { /* 容忍模型夹带杂文 */ }
+        }
+      }
+      events.push({ sid, ok: sids.length > 0, title: jb.title, kind: "semantic", sids });
+      continue;
+    }
     if (ok) {
       const sums = loadSummaries();
       sums[sid] = { text: out.slice(0, 20000), ts: Date.now() / 1000 };

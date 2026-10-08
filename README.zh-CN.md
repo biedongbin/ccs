@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.1-blue?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.1.2-blue?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/python-3.9+-green?style=flat-square" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/dependencies-zero-brightgreen?style=flat-square" alt="Zero dependencies">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat-square" alt="Platform">
@@ -94,7 +94,9 @@ ccs --check    # 非交互：统计会话/项目/归档数与最新标题
 | 键 | 动作 |
 |---|---|
 | ↑/↓ | 移动 |
-| `/` | 搜索（标题 / 项目 / 会话 ID，大小写不敏感） |
+| `/` | 搜索（标题 / 项目路径 / 会话 ID，大小写不敏感） |
+| `?` | 内容搜索（首尾指令 + 最后回复正文） |
+| `S` | AI 语义搜索：输入自然语言，后台 `claude -p` 对当前列表（默认最近 15 天；查询含时间范围则放开）做语义匹配，命中集过滤列表，`Esc` 清除 |
 | Tab | 项目过滤弹层（Enter 确认，Esc 取消） |
 | Enter | 在当前终端原地恢复：chdir 回会话原启动目录，exec 接管（命令模板可配，见 `resume_cmd`） |
 | a / u | 归档 / 还原 |

@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.1-blue?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.1.2-blue?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/python-3.9+-green?style=flat-square" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/dependencies-zero-brightgreen?style=flat-square" alt="Zero dependencies">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat-square" alt="Platform">
@@ -94,7 +94,9 @@ First launch with no `~/.ccs/config.json` runs a guided setup for language and t
 | Key | Action |
 |---|---|
 | ↑/↓ | move |
-| `/` | search (title / project / session ID, case-insensitive) |
+| `/` | search (title / project path / session ID, case-insensitive) |
+| `?` | content search (first/last commands + last reply body) |
+| `S` | AI semantic search: type natural language, a background `claude -p` matches the current list semantically (last 15 days by default; a time range in the query lifts the window), filters the list to matches; `Esc` clears |
 | Tab | project filter picker (Enter confirm, Esc cancel) |
 | Enter | resume in place: chdir to the session's original directory and exec (template configurable via `resume_cmd`) |
 | a / u | archive / restore |

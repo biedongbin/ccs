@@ -161,10 +161,11 @@ I18N_KEYS = (  # 有序：STRINGS 按 zip(keys, values) 展开，键序必须与
     "copied", "no_copy", "no_copy_tool", "gone_input", "gone_conf", "mk_fail",
     "op_fail", "rel_now", "rel_m", "rel_h", "rel_d",
     "ai_summary", "sum_run", "sum_started", "sum_done", "sum_fail",
-    "rename_p", "rename_ok", "pager_hint")
+    "rename_p", "rename_ok", "pager_hint",
+    "search_c", "sem_p", "sem_run", "sem_done", "sem_fail", "badge_sem")
 
 _LANG_DATA = {
-"zh": (" ↑↓ 选择 | / 搜索 | Tab 选项目 | Esc 返回 | Enter 恢复 | a/u 归档还原 | d 删 | A 归档区 | y/Y 复制首问/末答 | o 阅读 | r 改名 | s 总结 | F5 重扫 | q 退出",
+"zh": (" ↑↓ 选择 | / 搜索 | ? 内容搜 | Tab 选项目 | Esc 返回 | Enter 恢复 | a/u 归档还原 | d 删 | A 归档区 | y/Y 复制首问/末答 | o 阅读 | r 改名 | s 总结 | S 语义搜 | F5 重扫 | q 退出",
        "ccs · {n}", "【归档区】", "[项目: {v}]", "[搜: {v}]", "+ 详情", "时间     标题",
        "标题", "项目", "分支", "ID", "首尾指令", "最后回复", "(无)",
        "搜索: ", " 项目过滤 ↑↓选择 回车确认 Esc取消 ", "全部", "终端太小 ({w}x{h}，需 ≥60x12)，q 退出",
@@ -173,8 +174,9 @@ _LANG_DATA = {
        "创建失败: {e}", "操作失败: {e}", "刚刚", "{n}分钟前", "{n}小时前", "{n}天前",
        "AI 总结", "总结生成中…", "总结任务已发起: {t}", "总结完成: {t}", "总结失败: {t}",
        "重命名 [{t}]: ", "已改名: {t}",
-       " ↑↓ 滚动 | Space 翻页 | g/G 首尾 | q 返回列表"),
-"en": (" ↑↓ move | / search | Tab projects | Esc back | Enter resume | a/u archive-restore | d delete | A archive | y/Y copy first/last | o read | r rename | s summary | F5 rescan | q quit",
+       " ↑↓ 滚动 | Space 翻页 | g/G 首尾 | q 返回列表",
+       "内容: ", "语义: ", "语义搜索中…", "语义匹配 {n} 个会话", "语义搜索失败", "[语义: {v}]"),
+"en": (" ↑↓ move | / search | ? content | Tab projects | Esc back | Enter resume | a/u archive-restore | d delete | A archive | y/Y copy first/last | o read | r rename | s summary | S semantic | F5 rescan | q quit",
        "ccs · {n}", "[ARCHIVE]", "[proj: {v}]", "[q: {v}]", "+ detail", "time     title",
        "title", "project", "branch", "ID", "first/last cmds", "last reply", "(none)",
        "search: ", " filter: ↑↓ select, Enter confirm, Esc cancel ", "ALL",
@@ -185,8 +187,9 @@ _LANG_DATA = {
        "mkdir failed: {e}", "operation failed: {e}", "just now", "{n}m ago", "{n}h ago", "{n}d ago",
        "AI summary", "summarizing…", "summary started: {t}", "summary done: {t}", "summary failed: {t}",
        "rename [{t}]: ", "renamed: {t}",
-       " ↑↓ scroll | Space page | g/G ends | q back"),
-"ja": (" jk移動 | /検索 | Tabプロジェクト | Esc戻る | Enter復元 | a/uアーカイブ | d削除 | Aアーカイブ | y/Yコピー | o閲読 | r改名 | s要約 | F5再読込 | q終了",
+       " ↑↓ scroll | Space page | g/G ends | q back",
+       "content: ", "semantic: ", "semantic search running…", "semantic match: {n} sessions", "semantic search failed", "[semantic: {v}]"),
+"ja": (" ↑↓移動 | /検索 | ?内容 | Tabプロジェクト | Esc戻る | Enter復元 | a/uアーカイブ | d削除 | Aアーカイブ | y/Yコピー | o閲読 | r改名 | s要約 | S意味 | F5再読込 | q終了",
        "ccs · {n}", "【アーカイブ】", "[proj: {v}]", "[検: {v}]", "+ 詳細", "時刻     タイトル",
        "タイトル", "プロジェクト", "ブランチ", "ID", "前後の指示", "最後の返信", "(なし)",
        "検索: ", " プロジェクト選択 ↑↓選択 Enter確定 Esc取消 ", "すべて",
@@ -197,8 +200,9 @@ _LANG_DATA = {
        "作成失敗: {e}", "操作失敗: {e}", "たった今", "{n}分前", "{n}時間前", "{n}日前",
        "AI 要約", "要約生成中…", "要約タスク開始: {t}", "要約完了: {t}", "要約失敗: {t}",
        "名前変更 [{t}]: ", "変更後: {t}",
-       " ↑↓スクロール | Space改ページ | g/G先頭/末尾 | q戻る"),
-"ko": (" ↑↓ 이동 | / 검색 | Tab 프로젝트 | Esc 뒤로 | Enter 복원 | a/u 보관 | d 삭제 | A 보관함 | y/Y 복사 | o 읽기 | r 이름변경 | s 요약 | F5 재스캔 | q 종료",
+       " ↑↓スクロール | Space改ページ | g/G先頭/末尾 | q戻る",
+       "内容: ", "意味: ", "意味検索中…", "意味一致 {n} 件", "意味検索失敗", "[意味: {v}]"),
+"ko": (" ↑↓ 이동 | / 검색 | ? 내용 | Tab 프로젝트 | Esc 뒤로 | Enter 복원 | a/u 보관 | d 삭제 | A 보관함 | y/Y 복사 | o 읽기 | r 이름변경 | s 요약 | S 의미 | F5 재스캔 | q 종료",
        "ccs · {n}", "[보관함]", "[proj: {v}]", "[q: {v}]", "+ 상세", "시간     제목",
        "제목", "프로젝트", "브랜치", "ID", "처음/끝 명령", "마지막 답변", "(없음)",
        "검색: ", " 프로젝트 필터 ↑↓선택 Enter확정 Esc취소 ", "전체",
@@ -209,8 +213,9 @@ _LANG_DATA = {
        "생성 실패: {e}", "작업 실패: {e}", "방금", "{n}분 전", "{n}시간 전", "{n}일 전",
        "AI 요약", "요약 생성 중…", "요약 시작: {t}", "요약 완료: {t}", "요약 실패: {t}",
        "이름 변경 [{t}]: ", "변경됨: {t}",
-       " ↑↓ 스크롤 | Space 페이지 | g/G 처음/끝 | q 돌아가기"),
-"es": (" ↑↓ mover | / buscar | Tab proyectos | Esc atrás | Enter reanudar | a/u archivar | d borrar | A archivo | y/Y copiar | o leer | r renombrar | s resumen | F5 reescanear | q salir",
+       " ↑↓ 스크롤 | Space 페이지 | g/G 처음/끝 | q 돌아가기",
+       "내용: ", "의미: ", "의미 검색 중…", "의미 일치 {n}개", "의미 검색 실패", "[의미: {v}]"),
+"es": (" ↑↓ mover | / buscar | ? contenido | Tab proyectos | Esc atrás | Enter reanudar | a/u archivar | d borrar | A archivo | y/Y copiar | o leer | r renombrar | s resumen | S semántica | F5 reescanear | q salir",
        "ccs · {n}", "[ARCHIVO]", "[proy: {v}]", "[b: {v}]", "+ detalle", "hora     título",
        "título", "proyecto", "rama", "ID", "primeros/últ cmds", "última respuesta", "(nada)",
        "buscar: ", " filtro: ↑↓ elegir, Enter confirmar, Esc cancelar ", "TODAS",
@@ -221,8 +226,9 @@ _LANG_DATA = {
        "error al crear: {e}", "fallo de operación: {e}", "ahora", "hace {n}m", "hace {n}h", "hace {n}d",
        "Resumen IA", "generando resumen…", "resumen iniciado: {t}", "resumen listo: {t}", "fallo de resumen: {t}",
        "renombrar [{t}]: ", "renombrado: {t}",
-       " ↑↓ desplazar | Space página | g/G extremos | q volver"),
-"fr": (" ↑↓ déplacer | / rechercher | Tab projets | Esc retour | Enter reprendre | a/u archiver | d supprimer | A archives | y/Y copier | o lire | r renommer | s résumé | F5 rescanner | q quitter",
+       " ↑↓ desplazar | Space página | g/G extremos | q volver",
+       "contenido: ", "semántica: ", "búsqueda semántica en curso…", "coincidencias: {n} sesiones", "búsqueda semántica fallida", "[semántica: {v}]"),
+"fr": (" ↑↓ déplacer | / rechercher | ? contenu | Tab projets | Esc retour | Enter reprendre | a/u archiver | d supprimer | A archives | y/Y copier | o lire | r renommer | s résumé | S sémantique | F5 rescanner | q quitter",
        "ccs · {n}", "[ARCHIVES]", "[proj: {v}]", "[q: {v}]", "+ détail", "heure     titre",
        "titre", "projet", "branche", "ID", "1res/derniers cmds", "dernière réponse", "(aucun)",
        "recherche : ", " filtre : ↑↓ choisir, Enter valider, Esc annuler ", "TOUTES",
@@ -233,8 +239,9 @@ _LANG_DATA = {
        "échec création : {e}", "échec : {e}", "à l'instant", "il y a {n}m", "il y a {n}h", "il y a {n}j",
        "Résumé IA", "résumé en cours…", "résumé lancé : {t}", "résumé terminé : {t}", "échec du résumé : {t}",
        "renommer [{t}] : ", "renommé : {t}",
-       " ↑↓ défiler | Space page | g/G extrémités | q retour"),
-"de": (" ↑↓ bewegen | / suchen | Tab Projekte | Esc zurück | Enter fortsetzen | a/u archivieren | d löschen | A Archiv | y/Y kopieren | o lesen | r umbenennen | s Zusammenfassung | F5 neu einlesen | q beenden",
+       " ↑↓ défiler | Space page | g/G extrémités | q retour",
+       "contenu : ", "sémantique : ", "recherche sémantique en cours…", "correspondances : {n} sessions", "échec de la recherche sémantique", "[sémantique : {v}]"),
+"de": (" ↑↓ bewegen | / suchen | ? Inhalt | Tab Projekte | Esc zurück | Enter fortsetzen | a/u archivieren | d löschen | A Archiv | y/Y kopieren | o lesen | r umbenennen | s Zusammenfassung | S Semantik | F5 neu einlesen | q beenden",
        "ccs · {n}", "[ARCHIV]", "[proj: {v}]", "[q: {v}]", "+ Detail", "Zeit     Titel",
        "Titel", "Projekt", "Branch", "ID", "erste/letzte Befehle", "letzte Antwort", "(nichts)",
        "Suche: ", " Filter: ↑↓ wählen, Enter bestätigen, Esc abbrechen ", "ALLE",
@@ -245,8 +252,9 @@ _LANG_DATA = {
        "Erstellen fehlgeschlagen: {e}", "Fehler: {e}", "gerade", "vor {n}M", "vor {n}S", "vor {n}T",
        "KI-Zusammenfassung", "Zusammenfassung läuft…", "Zusammenfassung gestartet: {t}", "Zusammenfassung fertig: {t}", "Zusammenfassung fehlgeschlagen: {t}",
        "umbenennen [{t}]: ", "umbenannt: {t}",
-       " ↑↓ scrollen | Space Seite | g/G Enden | q zurück"),
-"ru": (" ↑↓ вниз/вверх | / поиск | Tab проекты | Esc назад | Enter возобновить | a/u архив | d удалить | A архив | y/Y копировать | o чтение | r переим. | s обзор | F5 пересканировать | q выход",
+       " ↑↓ scrollen | Space Seite | g/G Enden | q zurück",
+       "Inhalt: ", "Semantik: ", "semantische Suche läuft…", "semantische Treffer: {n} Sitzungen", "semantische Suche fehlgeschlagen", "[Semantik: {v}]"),
+"ru": (" ↑↓ вниз/вверх | / поиск | ? содержимое | Tab проекты | Esc назад | Enter возобновить | a/u архив | d удалить | A архив | y/Y копировать | o чтение | r переим. | s обзор | S смысл | F5 пересканировать | q выход",
        "ccs · {n}", "[АРХИВ]", "[proj: {v}]", "[q: {v}]", "+ детали", "время     заголовок",
        "заголовок", "проект", "ветка", "ID", "перв/посл команды", "последний ответ", "(нет)",
        "поиск: ", " фильтр: ↑↓ выбрать, Enter подтвердить, Esc отмена ", "ВСЕ",
@@ -257,8 +265,9 @@ _LANG_DATA = {
        "ошибка создания: {e}", "сбой: {e}", "только что", "{n}м назад", "{n}ч назад", "{n}д назад",
        "ИИ-резюме", "создание резюме…", "резюме запущено: {t}", "резюме готово: {t}", "ошибка резюме: {t}",
        "переименовать [{t}]: ", "переименовано: {t}",
-       " ↑↓ прокрутка | Space страница | g/G края | q назад"),
-"pt": (" ↑↓ mover | / buscar | Tab projetos | Esc voltar | Enter retomar | a/u arquivar | d excluir | A arquivo | y/Y copiar | o ler | r renomear | s resumo | F5 reescanear | q sair",
+       " ↑↓ прокрутка | Space страница | g/G края | q назад",
+       "содержимое: ", "смысл: ", "семантический поиск…", "семантических совпадений: {n}", "ошибка семантического поиска", "[смысл: {v}]"),
+"pt": (" ↑↓ mover | / buscar | ? conteúdo | Tab projetos | Esc voltar | Enter retomar | a/u arquivar | d excluir | A arquivo | y/Y copiar | o ler | r renomear | s resumo | S semântica | F5 reescanear | q sair",
        "ccs · {n}", "[ARQUIVO]", "[proj: {v}]", "[q: {v}]", "+ detalhes", "hora     título",
        "título", "projeto", "branch", "ID", "1ºs/últimos cmds", "última resposta", "(nada)",
        "buscar: ", " filtro: ↑↓ escolher, Enter confirmar, Esc cancelar ", "TODAS",
@@ -269,8 +278,9 @@ _LANG_DATA = {
        "falha ao criar: {e}", "falha: {e}", "agora", "há {n}m", "há {n}h", "há {n}d",
        "Resumo IA", "gerando resumo…", "resumo iniciado: {t}", "resumo completo: {t}", "falha no resumo: {t}",
        "renomear [{t}]: ", "renomeado: {t}",
-       " ↑↓ rolar | Space página | g/G extremos | q voltar"),
-"it": (" ↑↓ sposta | / cerca | Tab progetti | Esc indietro | Enter riprendi | a/u archivia | d elimina | A archivio | y/Y copia | o leggere | r rinomina | s riepilogo | F5 riscansiona | q esci",
+       " ↑↓ rolar | Space página | g/G extremos | q voltar",
+       "conteúdo: ", "semântica: ", "busca semântica em curso…", "correspondências: {n} sessões", "busca semântica falhou", "[semântica: {v}]"),
+"it": (" ↑↓ sposta | / cerca | ? contenuto | Tab progetti | Esc indietro | Enter riprendi | a/u archivia | d elimina | A archivio | y/Y copia | o leggere | r rinomina | s riepilogo | S semantica | F5 riscansiona | q esci",
        "ccs · {n}", "[ARCHIVIO]", "[proj: {v}]", "[q: {v}]", "+ dettaglio", "ora     titolo",
        "titolo", "progetto", "ramo", "ID", "primi/ultimi comandi", "ultima risposta", "(nessuno)",
        "cerca: ", " filtro: ↑↓ scegli, Enter conferma, Esc annulla ", "TUTTE",
@@ -281,7 +291,8 @@ _LANG_DATA = {
        "creazione fallita: {e}", "errore: {e}", "adesso", "{n}m fa", "{n}h fa", "{n}g fa",
        "Riassunto IA", "generazione riassunto…", "riassunto avviato: {t}", "riassunto pronto: {t}", "riassunto fallito: {t}",
        "rinominare [{t}]: ", "rinominato: {t}",
-       " ↑↓ scorri | Space pagina | g/G estremità | q indietro"),
+       " ↑↓ scorri | Space pagina | g/G estremità | q indietro",
+       "contenuto: ", "semantica: ", "ricerca semantica in corso…", "corrispondenze: {n} sessioni", "ricerca semantica fallita", "[semantica: {v}]"),
 }
 STRINGS = {lang: dict(zip(I18N_KEYS, tup)) for lang, tup in _LANG_DATA.items()}
 _LANG = "zh"
@@ -497,6 +508,40 @@ def do_rename(m: SessionMeta, name: str) -> bool:
     cache.save()
     return True
 
+def semantic_candidates(sessions: list, q: str) -> list:
+    """默认限最近 15 天（prompt 同步注明）；查询自带时间范围（含 N天/日/周/月/hour/day/week/month）
+    则信任用户表达，不做窗口强制。"""
+    if re.search(r"\d+\s*(天|日|周|月|小时|个?月|hour|day|week|month)", q):
+        return sessions[:100]
+    cut = _time.time() - 15 * 86400
+    return [m for m in sessions if m.mtime >= cut][:100]
+
+def build_semantic_argv(sessions: list, q: str) -> list:
+    """把候选会话清单打包进单次 claude -p 调用，让其返回语义匹配 sid 的 JSON 数组。"""
+    cands = semantic_candidates(sessions, q)
+    window = "" if len(cands) < len(sessions[:100]) or not sessions else "（范围：最近 15 天）"
+    items = []
+    for m in cands:                               # 上限 100：候选=当前视图（锚定/过滤后）
+        cmds = " / ".join((m.first_cmds + m.last_cmds)[:6])[:300]
+        items.append({"sid": m.sid, "title": m.title[:80], "cmds": cmds})
+    prompt = ("你是会话检索器。下面是 Claude Code 会话清单(JSON)。找出与查询语义最相关的会话"
+              "（最多 20 个，宁缺毋滥）。只输出 JSON 字符串数组（元素=sid），不要任何其他文字。"
+              f"{window}\n清单: {json.dumps(items, ensure_ascii=False)}\n查询: {q}")
+    return ["claude", "-p", prompt]
+
+def start_semantic(sessions: list, q: str) -> bool:
+    home = paths()[1]
+    d = os.path.join(home, "summarize")
+    os.makedirs(d, exist_ok=True)
+    outp = os.path.join(d, "semantic.out")
+    try:
+        proc = _subprocess.Popen(build_semantic_argv(sessions, q), stdout=open(outp, "wb"),
+                                 stderr=_subprocess.DEVNULL)
+    except OSError:
+        return False
+    JOBS["__semantic__"] = {"proc": proc, "out": outp, "title": q[:24], "kind": "semantic"}
+    return True
+
 def summaries_path() -> str:
     return os.path.join(paths()[1], "summaries.json")
 
@@ -514,7 +559,7 @@ def save_summaries(sums: dict):
         json.dump(sums, f, ensure_ascii=False)
     os.replace(tmp, summaries_path())
 
-JOBS = {}   # sid -> {proc, out, title}；随 ccs 退出即弃，孤儿输出由 harvest 兜底
+JOBS = {}   # key -> {proc, out, title, kind}；kind: summary|semantic；随 ccs 退出即弃
 
 def build_summary_argv(m: SessionMeta) -> list:
     prompt = (f"请读取并分析这个 Claude Code 会话记录文件：{m.path}（sessionId={m.sid}）。"
@@ -588,6 +633,9 @@ class AppState:
         self.query = ""
         self.project = None
         self.cursor = 0
+        self.content = False        # ? 内容搜索：匹配域换为首尾指令+最后回复
+        self.semantic = None        # S 语义命中集（set[sid]，None=未启用）
+        self.sem_q = ""             # 语义查询原文（徽章显示）
 
     def visible(self):
         q = self.query.lower()
@@ -597,8 +645,15 @@ class AppState:
                 continue
             if self.project and m.cwd != self.project:
                 continue
-            if q and q not in (m.title + m.cwd + m.sid).lower():
+            if self.semantic is not None and m.sid not in self.semantic:
                 continue
+            if q:
+                if self.content:
+                    blob = " ".join(m.first_cmds + m.last_cmds) + " " + m.last_reply
+                    if q not in blob.lower():
+                        continue
+                elif q not in (m.title + m.cwd + m.sid).lower():
+                    continue
             out.append(m)
         return out
 
@@ -621,10 +676,19 @@ class AppState:
         v = self.visible()
         return v[self.cursor] if 0 <= self.cursor < len(v) else None
 
+def _rebuild_sem(old: "AppState", sids: set) -> "AppState":
+    """语义结果回填：保留查询/项目/游标语义，仅更新命中集。"""
+    st2 = _rebuild(old, old.sessions, old.archive_view)
+    st2.semantic = sids or None
+    return st2
+
 def _rebuild(old: "AppState", sessions, archive_view: bool) -> "AppState":
     """a/u/d 后重扫：保留 query/project 过滤；光标停在原行（下一项自动补位）。"""
     st2 = AppState(sessions, archive_view)
     st2.query = old.query
+    st2.content = old.content
+    st2.semantic = old.semantic
+    st2.sem_q = old.sem_q
     st2.project = old.project
     st2.cursor = min(old.cursor, max(0, len(st2.visible()) - 1))
     return st2
@@ -1341,7 +1405,17 @@ def main(argv) -> int:
                     out = open(jb["out"], encoding="utf-8").read().strip()
                 except OSError:
                     out = ""
-                if jb["proc"].returncode == 0 and out:
+                if jb.get("kind") == "semantic":
+                    sids = []
+                    if jb["proc"].returncode == 0 and out:
+                        try:
+                            sids = json.loads(out[out.index("["):out.rindex("]") + 1])
+                        except (ValueError, json.JSONDecodeError):
+                            sids = []
+                    st = _rebuild_sem(st, set(sids))
+                    msg = (T("sem_done").format(n=len(sids)) if sids
+                           else T("sem_fail"))
+                elif jb["proc"].returncode == 0 and out:
                     sums0 = load_summaries()
                     sums0[sid] = {"text": out[:20000], "ts": _time.time()}
                     save_summaries(sums0)
@@ -1374,7 +1448,8 @@ def main(argv) -> int:
             # 标题栏
             badges = ((T("badge_arch") if st.archive_view else "")
                       + (T("badge_proj").format(v=os.path.basename(st.project) or st.project) if st.project else "")
-                      + (T("badge_q").format(v=st.query) if st.query else ""))
+                      + (T("badge_q").format(v=st.query) if st.query else "")
+                      + (T("badge_sem").format(v=st.sem_q[:12]) if st.sem_q else ""))
             _safe_add(stdscr, 0, 0, " " * (W - 1), curses.A_REVERSE)
             _safe_add(stdscr, 0, 1, " " + T("title").format(n=n) + (f" {badges}" if badges else ""),
                       curses.A_REVERSE | curses.A_BOLD)
@@ -1421,7 +1496,7 @@ def main(argv) -> int:
             _box(stdscr, TOP, LW, RW, BOT - TOP + 1, border_attr)
             _safe_add(stdscr, TOP, LW + 2, T("detail"), border_attr)
             # 状态行 + 帮助行
-            _safe_add(stdscr, H - 1 - nh, 0, ((T("search_p") + st.query + "▌") if searching else msg)[:W - 1], msg_attr)
+            _safe_add(stdscr, H - 1 - nh, 0, ((T("search_c" if st.content else "search_p") + st.query + "▌") if searching else msg)[:W - 1], msg_attr)
             for hi, hl in enumerate(help_ls):
                 _safe_add(stdscr, H - nh + hi, 0, hl[:W - 1], curses.A_DIM)
             # Tab 项目选择弹层（最上层）
@@ -1550,9 +1625,25 @@ def main(argv) -> int:
             elif k == "KEY_NPAGE": dscroll += list_h
             elif k == "/":
                 searching = True
+                st.content = False          # 标题/路径/ID 三域
                 st.query = ""
                 st.cursor = 0
                 off = 0
+            elif k == "?":                  # 内容搜索：首尾指令+最后回复
+                searching = True
+                st.content = True
+                st.query = ""
+                st.cursor = 0
+                off = 0
+            elif k == "S" and st.current() is not None or k == "S":
+                sq = _prompt(stdscr, H - 1 - nh, T("sem_p"))
+                if sq and sq.strip():
+                    st.sem_q = sq.strip()
+                    st.semantic = None      # 结果回来前维持现视图
+                    msg = (T("sem_run") if start_semantic(st.visible(), st.sem_q)
+                           else T("sem_fail"))
+                    st.cursor = 0
+                    off = 0
             elif k in ("KEY_ENTER", "\n"):
                 r = _resume(stdscr, st, H - 1 - nh, cmd=resume_cmd)   # 提示画在状态行，不压帮助行
                 if r is not None:
@@ -1600,8 +1691,10 @@ def main(argv) -> int:
                     st = _rebuild(st, scan(), st.archive_view)
                 except OSError as e:
                     msg = T("op_fail").format(e=e)
-            elif k in ("\x1b", "ESC"):                # Esc 逐级退出：清搜索/过滤 → 退出归档区
+            elif k in ("\x1b", "ESC"):                # Esc 逐级退出：清搜索/过滤/语义 → 退出归档区
                 st.query, st.project = "", None
+                st.content = False
+                st.semantic, st.sem_q = None, ""
                 st.archive_view = False
                 st.cursor = 0
                 off = 0

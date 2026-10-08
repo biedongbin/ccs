@@ -4,7 +4,7 @@ import { Box, Text, useInput, useStdout } from "ink";
 import { SessionMeta } from "./parse.js";
 import { scanAll, doRename, copyBackend, tilde } from "./scan.js";
 import { dw, cut, pad, hardWrap, mdLines } from "./width.js";
-import { loadSummaries, startSummary, pollJobs, harvestSummaries } from "./summary.js";
+import { loadSummaries, startSummary, startSemantic, pollJobs, harvestSummaries } from "./summary.js";
 import { execResume, execResumeAt } from "./resume.js";
 import { resumeCmdFull } from "./config.js";
 import { T, relTime } from "./i18n.js";
@@ -37,7 +37,8 @@ interface Props {
   custom?: Record<string, unknown>;
 }
 
-type Mode = { k: "list" } | { k: "search" } | { k: "rename" } | { k: "dir" } | { k: "picker" };
+type Mode = { k: "list" } | { k: "search" } | { k: "rename" } | { k: "dir" } | { k: "picker" }
+  | { k: "semantic" };
 
 export function CcsApp(props: Props) {
   const { stdout } = useStdout();
@@ -54,6 +55,9 @@ export function CcsApp(props: Props) {
   const [mode, setMode] = useState<Mode>({ k: "list" });
   const [buf, setBuf] = useState("");            // rename/dir/picker 输入缓冲
   const [msg, setMsg] = useState("");
+  const [content, setContent] = useState(false);          // ? 内容搜索：匹配域=首尾指令+最后回复
+  const [semantic, setSemantic] = useState<Set<string> | null>(null);   // S 语义命中集
+  const [semQ, setSemQ] = useState("");
   const keepMsg = useRef(false);
   const themeRef = useRef(themeAccents(props.theme, props.custom));
 
@@ -68,11 +72,18 @@ export function CcsApp(props: Props) {
   // 可见行（Python AppState.visible 语义）
   const rows = useMemo(() => {
     const q = query.toLowerCase();
-    return sessions.filter((m) =>
-      m.archived === archiveView
-      && (!project || m.cwd === project)
-      && (!q || (m.title + m.cwd + m.sid).toLowerCase().includes(q)));
-  }, [sessions, archiveView, project, query]);
+    return sessions.filter((m) => {
+      if (m.archived !== archiveView) return false;
+      if (project && m.cwd !== project) return false;
+      if (semantic !== null && !semantic.has(m.sid)) return false;
+      if (!q) return true;
+      if (content) {
+        const blob = [...m.first_cmds, ...m.last_cmds].join(" ") + " " + m.last_reply;
+        return blob.toLowerCase().includes(q);
+      }
+      return (m.title + m.cwd + m.sid).toLowerCase().includes(q);
+    });
+  }, [sessions, archiveView, project, query, content, semantic]);
   const n = rows.length;
   const cur = n ? rows[Math.min(cursor, n - 1)] : null;
   const H = size.h, W = size.w;
@@ -83,7 +94,16 @@ export function CcsApp(props: Props) {
     const iv = setInterval(() => {
       const evts = pollJobs();
       if (!evts.length) return;
-      for (const e of evts) setMsg(e.ok ? T("sum_done", { t: e.title.slice(0, 24) }) : T("sum_fail", { t: e.title.slice(0, 24) }));
+      let semanticSids: string[] | null = null;
+      for (const e of evts) {
+        if (e.kind === "semantic") {
+          semanticSids = e.sids ?? [];
+          setMsg(e.ok ? T("sem_done", { n: semanticSids.length }) : T("sem_fail"));
+        } else {
+          setMsg(e.ok ? T("sum_done", { t: e.title.slice(0, 24) }) : T("sum_fail", { t: e.title.slice(0, 24) }));
+        }
+      }
+      if (semanticSids !== null) setSemantic(semanticSids.length ? new Set(semanticSids) : new Set());
       setSessions(scanAll());
     }, 500);
     return () => clearInterval(iv);
@@ -114,6 +134,20 @@ export function CcsApp(props: Props) {
       else if (key.downArrow) setCursor((c) => Math.min(rows.length - 1, c + 1));
       else if (key.backspace || key.delete) { setQuery((q) => q.slice(0, -1)); setCursor(0); }
       else if (input && !key.ctrl && !key.meta) { setQuery((q) => q + input); setCursor(0); }
+      return;
+    }
+    if (mode.k === "semantic") {                           // S 语义查询输入（空=取消）
+      if (key.escape) setMode({ k: "list" });
+      else if (key.return || input === "\n") {
+        const q = buf.trim();
+        setMode({ k: "list" });
+        if (q) {
+          if (startSemantic(rows, q)) { setSemQ(q); setSemantic(null); setMsg(T("sem_run")); keepMsg.current = true; }
+          else setMsg(T("sem_fail"));
+        }
+      }
+      else if (key.backspace || key.delete) setBuf((b) => b.slice(0, -1));
+      else if (input && !key.ctrl && !key.meta) setBuf((b) => b + input);
       return;
     }
     if (mode.k === "rename" && cur) {
@@ -178,7 +212,9 @@ export function CcsApp(props: Props) {
     else if (key.upArrow) setCursor((c) => Math.max(c - 1, 0));
     else if (input === "g") setCursor(0);
     else if (input === "G" && n) setCursor(n - 1);
-    else if (input === "/") { setQuery(""); setCursor(0); setMode({ k: "search" }); }
+    else if (input === "/") { setContent(false); setQuery(""); setCursor(0); setMode({ k: "search" }); }
+    else if (input === "?") { setContent(true); setQuery(""); setCursor(0); setMode({ k: "search" }); }   // 内容搜索：首尾指令+最后回复
+    else if (input === "S") { setBuf(""); setMode({ k: "semantic" }); }                                    // 语义搜索输入态
     else if ((key.tab || input === "\t")) { setPickerIdx(0); setMode({ k: "picker" }); }
     else if (key.pageUp) setDscroll((d) => Math.max(0, d - listH));
     else if (key.pageDown) setDscroll((d) => d + listH);
@@ -204,7 +240,7 @@ export function CcsApp(props: Props) {
       else { process.stdout.write("\x1b[2J\x1b[H"); process.exit(r.status ?? 0); }
       }
     }
-    else if (key.escape) { setQuery(""); setProject(null); setArchiveView(false); setCursor(0); }
+    else if (key.escape) { setQuery(""); setContent(false); setSemantic(null); setSemQ(""); setProject(null); setArchiveView(false); setCursor(0); }
   };
   useInput((raw: string, k: Parameters<typeof onKey>[1]) => {
     if (raw.length > 1 && /^[\x20-\x7e\u00a0-\uffff]+$/.test(raw)) {
@@ -335,9 +371,12 @@ export function CcsApp(props: Props) {
   const badges =
     (archiveView ? T("badge_arch") : "")
     + (project ? T("badge_proj", { v: pth.basename(project) || project }) : "")
-    + (query ? T("badge_q", { v: query }) : "");
+    + (query ? T("badge_q", { v: query }) : "")
+    + (semQ ? T("badge_sem", { v: semQ.slice(0, 12) }) : "");
   const statusLine = mode.k === "search"
-    ? T("search_p") + query + "▌"
+    ? T(content ? "search_c" : "search_p") + query + "▌"
+    : mode.k === "semantic"
+      ? T("sem_p") + buf + "▌"
     : mode.k === "rename"
       ? T("rename_p", { t: (cur?.title || "").slice(0, 24) }) + buf
       : mode.k === "dir"

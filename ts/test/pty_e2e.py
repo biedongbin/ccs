@@ -130,5 +130,16 @@ def q_quit_check():
     return (not alive or status == 0) and b"\x1b[2J" in raw
 ok("5 q 退出·清屏序列已发", q_quit_check())
 
+# 6. ? 内容搜索 / Esc / S 语义提示
+frame = run([], [b"?", "优化".encode()])
+ok("6 ? 内容搜索·状态行标签", "内容:" in frame.replace(" ", ""))
+ok("6 ? 内容搜索·命中标题", "搜索功能优化任务" in frame)
+frame = run([], [b"?", "优化".encode(), b"\x1b"])
+ok("6 Esc 清内容搜索", "内容:" not in frame.replace(" ", "") and "修复登录问题" in frame)
+frame = run([], [b"S"])
+ok("6 S 语义输入提示", "语义:" in frame.replace(" ", ""))
+frame = run([])
+ok("6 帮助行含 ? 与 S 段", "?内容搜" in frame.replace(" ", "") and "S语义搜" in frame.replace(" ", ""))
+
 print(f"\n{P} passed, {F} failed")
 sys.exit(1 if F else 0)
