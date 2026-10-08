@@ -10,6 +10,7 @@ const SEP = path.sep; // posix "/"
 export const INTERNAL_PREFIXES = [
   "Below is a conversation log",
   "Caveat: The messages below",
+  "Base directory for this skill",   // skill 展开注入的 user 行，非真人指令
   "<local-command",
   "This session is being continued",
   "<command-name>",
@@ -160,7 +161,7 @@ export function parseJsonl(p: string, budget = 65536): Parsed {
     }
   }
 
-  if (!firstUser || (!cmds.length && !cmdsTail.length)) {
+  if (!firstUser || !cmds.length || !cmdsTail.length) {   // 任一侧缺失即全扫（尾部常被 AI 输出占满）
     // 兜底：真实首问/指令在头尾采样窗外（compact 续接样板挤占头部）→ 流式全扫
     const fullCmds: string[] = [];
     try {

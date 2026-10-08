@@ -80,7 +80,9 @@
       "custom_title": "",
       "cwd": "/w/projA",
       "entrypoint": "",
-      "first_cmds": [],
+      "first_cmds": [
+        "采样窗外的真实首问"
+      ],
       "first_user": "采样窗外的真实首问",
       "kind": "meta",
       "last_cmds": [
@@ -361,7 +363,9 @@
       "custom_title": "",
       "cwd": "/w/projA",
       "entrypoint": "",
-      "first_cmds": [],
+      "first_cmds": [
+        "采样窗外的真实首问"
+      ],
       "first_user": "采样窗外的真实首问",
       "last_cmds": [
         "采样窗外的真实首问"

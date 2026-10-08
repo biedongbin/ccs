@@ -309,6 +309,22 @@ def test_first_last_cmds_compact_fallback():
     assert m.last_cmds == ["指令6", "指令7", "指令8"], m.last_cmds
 
 
+def test_skill_boilerplate_and_tail_silent():
+    """skill 样板行非真人指令须过滤；尾部全是 AI 输出时单侧空也触发全扫。"""
+    td, proj, arch = _fake_tree()
+    f = os.path.join(proj, "sk.jsonl")
+    lines = [user_line("sid-sk", "/w/projA", "第一条真人指令"),
+             asst_line("sid-sk", "答1"),
+             user_line("sid-sk", "/w/projA", "Base directory for this skill: /xx/yy 的样板"),
+             asst_line("sid-sk", "答样板"),
+             user_line("sid-sk", "/w/projA", "第二条真人指令"),
+             asst_line("sid-sk", "尾部长回复" * 30000)]   # >64KB AI 输出占满 tail 窗
+    write_jsonl(f, lines)
+    m = ccs.parse_jsonl(f)
+    assert "Base directory" not in "".join(m.first_cmds + m.last_cmds)
+    assert m.last_cmds == ["第一条真人指令", "第二条真人指令"], m.last_cmds  # 单侧空触发兜底；全序只有2条则 last=全部
+
+
 def test_first_last_cmds():
     """首尾指令：前3 + 省略 + 后3；总数≤6 时去重拼接。"""
     td, proj, arch = _fake_tree()
