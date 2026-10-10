@@ -25,8 +25,11 @@ function deepEq(a, b, p, errs) {
     return false;
   }
   if (a === null || b === null || typeof a !== "object" || typeof b !== "object") {
-    if (a !== b) errs.push(`${p}: ${JSON.stringify(a)} != ${JSON.stringify(b)}`);
-    return a === b;
+    // repo 根前缀归一化：绝对路径随检出位置变化，比对前剥成相对路径（迁移/换机器均稳定）
+    const strip = (s) => typeof s === "string" ? s.split(ROOT + path.sep).join("") : s;
+    const [na, nb] = [strip(a), strip(b)];
+    if (na !== nb) errs.push(`${p}: ${JSON.stringify(na)} != ${JSON.stringify(nb)}`);
+    return na === nb;
   }
   const ka = Object.keys(a).sort();
   const byKey = (o) => Object.keys(o).sort();

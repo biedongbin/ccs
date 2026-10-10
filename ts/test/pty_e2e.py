@@ -4,7 +4,7 @@
 import os, pty, shutil, struct, termios, fcntl, time, select, sys
 import pyte
 
-TS = "/Users/biedongbin/workspace/biedb_tmp/claude_session/ts"
+TS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # <repo>/ts，随检出位置自适应
 W, H = 110, 30
 HOME = "/tmp/ccs_pty_home"
 PROJ = "/tmp/ccs_pty_proj"
