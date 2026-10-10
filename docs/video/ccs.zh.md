@@ -1,6 +1,6 @@
 ---
 title: ccs — 跨目录找回 Claude Code 会话
-subtitle: 15s 看懂 · 3s 安装 · 15s 会用
+subtitle: 看懂 · 装上 · 会用 · 能配
 theme: 3b1b
 ---
 
@@ -33,7 +33,8 @@ ccs -> 扫描全库: 所有项目
 curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
 ```
 
-> 一行 curl，零依赖。
+> 一行 curl，装完即用。
+> 纯标准库，零依赖，macOS、Linux、Windows 都能跑。
 
 ## 搜回上周的会话
 
@@ -42,4 +43,15 @@ curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
 `Enter` 回车 → 恢复到当初的目录
 
 > 按 / 搜「视频」，立刻浮出来。
-> 回车，回到当初的目录。
+> 回车，回到当初的目录，上下文全在。
+
+## 配置：语言与主题
+
+![ccs --config：语言、主题、恢复命令、自定义调色板](docs/video/shots/tui-config.png)
+
+- `lang` 界面语言 · 10 种
+- `theme` 配色主题 · 4+ 种 · 支持自定义调色板
+
+> 首次启动引导选择语言和主题。
+> ccs --config 随时再改，配置存 ~/.ccs/config.json。
+> 跨目录找回会话——ccs 一下。
