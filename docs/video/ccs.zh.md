@@ -12,21 +12,17 @@ ccs -> 扫描全库: 所有项目
 扫描全库 -> 回车恢复: 回到启动目录
 ```
 
-> --resume 只列当前目录；ccs [扫描全库]，回车恢复到原目录。
+> --resume 只列[当前目录]；ccs [扫描全库]，恢复到原目录。
 
-## 主界面
+## 主界面与安装
 
 ![完整界面：主从双栏，底部一排快捷键](docs/video/shots/tui-v2-main.png)
-
-> 左列表，右详情，底部是快捷键栏。
-
-## 安装
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
 ```
 
-> 一行 curl，即装即用。
+> 左列表右详情；一行 [curl] 即装即用。
 
 ## 第一步：按 / 搜索
 
@@ -42,9 +38,10 @@ curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
 
 ## 第三步：回车恢复
 
-![选中会话回车，恢复到当初的目录](docs/video/shots/tui-v2-done.png)
+![第一次回车关搜索框](docs/video/shots/tui-v2-done.png)
 
-> 回车，恢复到当初的目录，上下文全在。
+> 回车两次：先关搜索框，再恢复。
+> 恢复到当初的目录，上下文全在。
 
 ## 配置：语言与主题
 
