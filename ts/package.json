@@ -29,7 +29,7 @@
     "build": "tsc && node -e \"require('fs').copyFileSync('src/eaw.json','dist/eaw.json')\"",
     "test": "npm run -s build && node test/parity.cjs",
     "test:shell": "node test/spawn.test.cjs",
-    "test:unit": "node test/resume.test.cjs && node test/summary.test.cjs && node test/tui.test.cjs",
+    "test:unit": "node test/resume.test.cjs && node test/summary.test.cjs && node test/tui.test.cjs && node test/cache.test.cjs",
     "e2e": "npm run -s build && python3 test/pty_e2e.py",
     "prepublishOnly": "npm run -s build && node -e \"const fs=require('fs');fs.copyFileSync('../ccs','ccs');fs.copyFileSync('../README.md','README.md')\""
   },

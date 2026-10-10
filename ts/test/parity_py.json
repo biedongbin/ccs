@@ -1,4 +1,30 @@
 {
+  "argv": {
+    "resume_base": [
+      "/bin/parity-shell",
+      "-ic",
+      "cc --resume deadbeef-1234"
+    ],
+    "resume_full": [
+      "/bin/parity-shell",
+      "-ic",
+      "claude --resume 'sid-weird'\"'\"'; rm -rf x'"
+    ],
+    "semantic": [
+      "claude",
+      "-p",
+      "你是会话检索器。下面是 Claude Code 会话清单(JSON)。找出与查询语义最相关的会话（最多 20 个，宁缺毋滥）。只输出 JSON 字符串数组（元素=sid），不要任何其他文字。\n清单: [{\"sid\":\"sid-ai\",\"title\":\"新标题赢\",\"cmds\":\"问 / 问\"},{\"sid\":\"\",\"title\":\"badline\",\"cmds\":\"\"},{\"sid\":\"sid-big\",\"title\":\"采样窗外的真实首问\",\"cmds\":\"采样窗外的真实首问 / 采样窗外的真实首问\"},{\"sid\":\"sid-ca\",\"title\":\"人改标题\",\"cmds\":\"首问 / 首问\"},{\"sid\":\"sid-ct\",\"title\":\"官方改名\",\"cmds\":\"首问 / 首问\"},{\"sid\":\"sid-inf\",\"title\":\"续会话标题\",\"cmds\":\"第一问 / 第一问\"},{\"sid\":\"sid-int\",\"title\":\"真正的第一个问题\",\"cmds\":\"真正的第一个问题 / 真正的第一个问题\"},{\"sid\":\"sid-lr\",\"title\":\"问\",\"cmds\":\"问 / 问\"},{\"sid\":\"sid-multi\",\"title\":\"第一行 第二行 内容\",\"cmds\":\"第一行\\n\\n第二行 内容 / 第一行\\n\\n第二行 内容\"},{\"sid\":\"sid-n\",\"title\":\"修复登录bug\",\"cmds\":\"修复登录bug / 修复登录bug\"},{\"sid\":\"\",\"title\":\"没有sessionId的首问\",\"cmds\":\"没有sessionId的首问 / 没有sessionId的首问\"},{\"sid\":\"sid-null\",\"title\":\"真实首问\",\"cmds\":\"真实首问 / 真实首问\"},{\"sid\":\"sid-sdk\",\"title\":\"SDK 衍生会话\",\"cmds\":\"SDK 衍生会话 / SDK 衍生会话\"},{\"sid\":\"sid-side\",\"title\":\"真实首问\",\"cmds\":\"真实首问 / 真实首问\"}]\n查询: 15天前 修复登录",
+      "--allowedTools",
+      "Read"
+    ],
+    "summary": [
+      "claude",
+      "-p",
+      "请读取并分析这个 Claude Code 会话记录文件：/Users/biedongbin/workspace/github/ccs/ts/fixtures/projects/-w-projA/ai-title.jsonl（sessionId=sid-ai）。输出（中文 Markdown，简洁分节）：1) 会话/需求的所有核心目标；2) 整体任务工作计划与进度百分比；3) 当前代码分支状态；4) 本会话解决了哪些问题，列出问题清单。",
+      "--allowedTools",
+      "Read"
+    ]
+  },
   "launch_dir": {
     "deleted-dir-join-all": "/Users/biedongbin/nonexistent/abc/def",
     "empty-parts": "/",

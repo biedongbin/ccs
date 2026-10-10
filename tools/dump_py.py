@@ -134,8 +134,27 @@ def main():
             else:
                 os.environ[k] = v
 
+    # ---- argv 组：semantic / summary / resume（SHELL 双侧钉死，基线跨机稳定）----
+    os.environ["SHELL"] = "/bin/parity-shell"
+    sem_sessions = []
+    for fn in sorted(os.listdir(PROJ_E)):
+        if fn.endswith(".jsonl"):
+            mm = ccs.parse_jsonl(os.path.join(PROJ_E, fn))
+            if isinstance(mm, ccs.SessionMeta):
+                sem_sessions.append(mm)
+    # 查询带数字时间词 → 绕开 mtime 窗（基线确定性）；窗口语义由 test_ccs.py / tui.test.cjs 锁定
+    argv_out = {
+        "semantic": ccs.build_semantic_argv(sem_sessions, "15天前 修复登录"),
+        "summary": ccs.build_summary_argv(sem_sessions[0]),
+        "resume_full": ccs.build_resume_argv(
+            ccs.SessionMeta(sid="sid-weird'; rm -rf x", title="t", cwd="/w"),
+            cmd="claude --resume {sid}"),
+        "resume_base": ccs.build_resume_argv(
+            ccs.SessionMeta(sid="deadbeef-1234", title="t", cwd="/w"), cmd="cc"),
+    }
+
     out = {"parse": parse_out, "launch_dir": ld_out, "scan": scan_out,
-           "width": width_out, "store": store_out}
+           "width": width_out, "store": store_out, "argv": argv_out}
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2, sort_keys=True)
     print(f"baseline -> {OUT}: parse={len(parse_out)} scan={len(scan_out)} ld={len(ld_out)}")

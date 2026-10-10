@@ -648,6 +648,69 @@ def test_hard_wrap_segments():
     assert any("Enter 恢复" in l for l in ls)                 # 段完整
     assert not any(l.strip() in ("删", "出", "复", "原") for l in ls)   # 无被腰斩的单字段残行
 
+def test_semantic_window_note():
+    """A2 回归：过滤生效才注明「范围：最近 15 天」，数字时间词则不注。"""
+    mk = lambda sid, mtime: ccs.SessionMeta(sid=sid, title=sid, cwd="/w", mtime=mtime)
+    now = time.time()
+    old = mk("s-old", now - 30 * 86400)
+    new = mk("s-new", now - 100)
+    argv1 = ccs.build_semantic_argv([old, new], "修复登录")
+    assert "范围：最近 15 天" in argv1[2]
+    argv2 = ccs.build_semantic_argv([old, new], "30天前 修复登录")
+    assert "范围" not in argv2[2]
+    argv3 = ccs.build_semantic_argv([new], "修复登录")
+    assert "范围" not in argv3[2]
+
+def test_semantic_allowedTools():
+    """D2 回归：语义调用与 summary 同收紧 --allowedTools Read。"""
+    m = ccs.SessionMeta(sid="s1", title="t", cwd="/w")
+    assert ccs.build_semantic_argv([m], "x 修复")[-2:] == ["--allowedTools", "Read"]
+
+def test_resume_sid_quoted():
+    """D1 回归：sid 可被构造，进 shell 串必须按 shlex.quote 引注。"""
+    m = ccs.SessionMeta(sid="a'; b", title="t", cwd="/w")
+    assert ccs.build_resume_argv(m)[-1].endswith("'a'\"'\"'; b'")
+    m2 = ccs.SessionMeta(sid="deadbeef-1234", title="t", cwd="/w")
+    assert "--resume deadbeef-1234" in ccs.build_resume_argv(m2)[-1]
+
+def test_s_guard_tautology_absent():
+    """A1 回归（源码级）：S 键守卫不得再出现 and/or 恒真式。"""
+    src = open(os.path.join(HERE, "ccs"), encoding="utf-8").read()
+    assert 'k == "S" and st.current() is not None or k == "S"' not in src
+    assert 'k == "S" and st.current() is not None:' in src
+
+def test_cache_save_prunes():
+    """C2 回归：保存即修剪——文件消失/mtime 变更的键不落盘。"""
+    d = tempfile.mkdtemp()
+    proj = os.path.join(d, "projects")
+    enc = os.path.join(proj, "-w-prj")
+    os.makedirs(enc)
+    p1 = os.path.join(enc, "a.jsonl")
+    with open(p1, "w") as f:
+        f.write(json.dumps(user_line("s1", enc, "问题"), ensure_ascii=False) + "\n"
+                + json.dumps(asst_line("s1", "答"), ensure_ascii=False) + "\n")
+    old = {k: os.environ.get(k) for k in ("CCS_PROJECTS_DIR", "CCS_HOME")}
+    os.environ["CCS_PROJECTS_DIR"] = proj
+    os.environ["CCS_HOME"] = os.path.join(d, "ccs")
+    try:
+        ccs.scan()
+        c = ccs.Cache(os.path.join(d, "ccs"))
+        assert any(k.startswith("v%d|" % ccs.CACHE_VERSION) for k in c.data)
+        ghost = os.path.join(proj, "gone.jsonl")
+        c.put(ccs.SessionMeta(sid="ghost", title="t", cwd="/w", path=ghost), 12345)
+        os.remove(p1)
+        c.save()
+        c2 = ccs.Cache(os.path.join(d, "ccs"))
+        assert all("gone.jsonl" not in k for k in c2.data)
+        assert all(os.path.exists(k.split("|", 2)[1])
+                   for k in c2.data if k.startswith("v%d|" % ccs.CACHE_VERSION))
+    finally:
+        for k, v in old.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0

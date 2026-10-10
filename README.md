@@ -167,7 +167,7 @@ Power users can also hand-edit `~/.ccs/config.json`: `{"custom": {"nord": ["cyan
 ## Tests
 
 ```bash
-python3 test_ccs.py    # assert-style, no framework, 47 checks
+python3 test_ccs.py    # assert-style, no framework, 58 checks
 ```
 
 ## License

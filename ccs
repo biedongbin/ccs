@@ -337,7 +337,7 @@ def load_config(home: str = "") -> dict:
 def save_config(cfg: dict, home: str = ""):
     h = home or paths()[1]
     os.makedirs(h, exist_ok=True)
-    tmp = os.path.join(h, "config.json.tmp")
+    tmp = os.path.join(h, f"config.json.tmp{os.getpid()}")   # 双开安全：pid 后缀（cache/summaries 同纪律）
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(cfg, f, ensure_ascii=False, indent=1)
     os.replace(tmp, config_path(h))
@@ -364,7 +364,19 @@ class Cache:
         self.data[f"v{CACHE_VERSION}|{s.path}|{mtime_ns}"] = {k: getattr(s, k) for k in _CACHE_FIELDS}
 
     def save(self):
-        tmp = self.path + ".tmp"
+        # C2: 保存即修剪——键含路径+mtime_ns，文件消失或 mtime 已变（或版本更替）的键永不命中，一律裁掉
+        live = {}
+        for k, v in self.data.items():
+            parts = k.split("|", 2)
+            if len(parts) != 3:
+                continue
+            try:
+                if f"v{CACHE_VERSION}|{parts[1]}|{os.stat(parts[1]).st_mtime_ns}" == k:
+                    live[k] = v
+            except OSError:
+                pass
+        self.data = live
+        tmp = self.path + f".tmp{os.getpid()}"   # 双开安全：pid 后缀临时名（config/summaries 同纪律）
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(self.data, f, ensure_ascii=False)
         os.replace(tmp, self.path)
@@ -534,15 +546,15 @@ def semantic_candidates(sessions: list, q: str) -> list:
 def build_semantic_argv(sessions: list, q: str) -> list:
     """把候选会话清单打包进单次 claude -p 调用，让其返回语义匹配 sid 的 JSON 数组。"""
     cands = semantic_candidates(sessions, q)
-    window = "" if len(cands) < len(sessions[:100]) or not sessions else "（范围：最近 15 天）"
+    window = "（范围：最近 15 天）" if sessions and len(cands) < len(sessions[:100]) else ""   # A2: 过滤生效才注明（原三元反向）
     items = []
     for m in cands:                               # 上限 100：候选=当前视图（锚定/过滤后）
         cmds = " / ".join((m.first_cmds + m.last_cmds)[:6])[:300]
         items.append({"sid": m.sid, "title": m.title[:80], "cmds": cmds})
     prompt = ("你是会话检索器。下面是 Claude Code 会话清单(JSON)。找出与查询语义最相关的会话"
               "（最多 20 个，宁缺毋滥）。只输出 JSON 字符串数组（元素=sid），不要任何其他文字。"
-              f"{window}\n清单: {json.dumps(items, ensure_ascii=False)}\n查询: {q}")
-    return ["claude", "-p", prompt]
+              f"{window}\n清单: {json.dumps(items, ensure_ascii=False, separators=(',', ':'))}\n查询: {q}")
+    return ["claude", "-p", prompt, "--allowedTools", "Read"]   # D2: 语义调用同 summary 收紧工具面
 
 def start_semantic(sessions: list, q: str) -> bool:
     home = paths()[1]
@@ -569,7 +581,7 @@ def load_summaries() -> dict:
         return {}
 
 def save_summaries(sums: dict):
-    tmp = summaries_path() + ".tmp"
+    tmp = summaries_path() + f".tmp{os.getpid()}"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(sums, f, ensure_ascii=False)
     os.replace(tmp, summaries_path())
@@ -639,7 +651,7 @@ def build_resume_argv(m: SessionMeta, cmd: str = DEFAULT_RESUME_CMD) -> list:
     if os.name == "nt":                      # ponytail: Windows 无 shell 函数语义，直 execvp，够用
         return build_direct_argv(m, cmd=cmd)
     sh = os.environ.get("SHELL") or "/bin/sh"
-    return [sh, "-ic", resume_cmd_full(cmd).format(sid=m.sid)]
+    return [sh, "-ic", resume_cmd_full(cmd).format(sid=_shlex.quote(m.sid))]   # D1: sid 出自文件名可被构造，shell 串必须加引号
 
 class AppState:
     def __init__(self, sessions, archive_view=False):
@@ -995,6 +1007,8 @@ def _resume(stdscr, st, row, cmd=DEFAULT_RESUME_CMD):
             except OSError as e:
                 return T("mk_fail").format(e=e)
     dargv = build_resume_argv(m, cmd=cmd)
+    if not _shutil.which(dargv[0]):              # D3: exec 前预检——失败在 TUI 内报错，终端不拆
+        return T("op_fail").format(e=f"{dargv[0]}: not found")
     curses.endwin()
     if eff != os.getcwd():
         os.chdir(eff)                                # 落回会话原启动目录再恢复
@@ -1498,7 +1512,7 @@ def main(argv) -> int:
                     dscroll = 0
                     last_sid = cur.sid
                 rw = RW - 2
-                dlines = _detail_lines(cur, rw, load_summaries())
+                dlines = _detail_lines(cur, rw, st.sums)   # C1: 用内存态——draw 路径每帧重读文件已废
                 dscroll = max(0, min(dscroll, max(0, len(dlines) - list_h)))
                 for j, segs in enumerate(dlines[dscroll:dscroll + list_h]):
                     x = LW + 1
@@ -1555,7 +1569,7 @@ def main(argv) -> int:
                 if pwin_wh != (H, W):
                     pwin = curses.newwin(H, W, 0, 0)
                     pwin_wh = (H, W)
-                dls = _detail_lines(curp, W - 2, load_summaries())
+                dls = _detail_lines(curp, W - 2, st.sums)   # C1: 同上，pager 亦用内存态
                 pgoff = max(0, min(pgoff, max(0, len(dls) - (H - 2))))
                 pwin.erase()
                 _safe_add(pwin, 0, 0, " " * (W - 1), curses.A_REVERSE)
@@ -1655,7 +1669,7 @@ def main(argv) -> int:
                 st.query = ""
                 st.cursor = 0
                 off = 0
-            elif k == "S" and st.current() is not None or k == "S":
+            elif k == "S" and st.current() is not None:   # 空列表不发起语义调用（A1：原 or 分支致条件恒真）
                 sq = _prompt(stdscr, H - 1 - nh, T("sem_p"))
                 if sq and sq.strip():
                     st.sem_q = sq.strip()

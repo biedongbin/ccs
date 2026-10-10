@@ -60,6 +60,7 @@ export function CcsApp(props: Props) {
   const [semQ, setSemQ] = useState("");
   const keepMsg = useRef(false);
   const themeRef = useRef(themeAccents(props.theme, props.custom));
+  const sumsRef = useRef(loadSummaries());   // C1: 详情栏总结走内存，勿逐帧读盘
 
   // 终端尺寸
   const [size, setSize] = useState({ h: stdout.rows || 24, w: stdout.columns || 80 });
@@ -70,7 +71,7 @@ export function CcsApp(props: Props) {
   }, [stdout]);
 
   // 可见行（Python AppState.visible 语义；内容域=全文：all_cmds+AI 总结+last_reply）
-  const sumsForFilter = useMemo(() => (content ? loadSummaries() : {}), [content, sessions, msg]);
+  const sumsForFilter = useMemo(() => (content ? loadSummaries() : {}), [content, sessions]);   // C1: 不依赖 msg
   const rows = useMemo(() => {
     const q = query.toLowerCase();
     return sessions.filter((m) => {
@@ -98,14 +99,17 @@ export function CcsApp(props: Props) {
       const evts = pollJobs();
       if (!evts.length) return;
       let semanticSids: string[] | null = null;
+      let hadSummary = false;
       for (const e of evts) {
         if (e.kind === "semantic") {
           semanticSids = e.sids ?? [];
           setMsg(e.ok ? T("sem_done", { n: semanticSids.length }) : T("sem_fail"));
         } else {
+          hadSummary = true;
           setMsg(e.ok ? T("sum_done", { t: e.title.slice(0, 24) }) : T("sum_fail", { t: e.title.slice(0, 24) }));
         }
       }
+      if (hadSummary) sumsRef.current = loadSummaries();
       if (semanticSids !== null) setSemantic(semanticSids.length ? new Set(semanticSids) : new Set());
       setSessions(scanAll());
     }, 500);
@@ -280,7 +284,7 @@ export function CcsApp(props: Props) {
 
   // ---- 详情行（Python _detail_lines 等价：字段4行 + bar + AI总结/首问/末答，mdLines 渲染） ----
   function detailLines(m: SessionMeta, width: number): { text: string; kind: "lab" | "val" | "dim" }[] {
-    const sums = loadSummaries();
+    const sums = sumsRef.current;   // C1: 内存态；总结完成时由 tick 刷新
     const bar = { text: "-".repeat(Math.max(4, width)), kind: "dim" as const };
     const vw = Math.max(8, width - 6);               // R2-1: 值按栏宽截断——超长 sid/cwd 交 ink 自动换行会溢出次行
     const out: { text: string; kind: "lab" | "val" | "dim" }[] = [
@@ -340,20 +344,25 @@ export function CcsApp(props: Props) {
   // ---- picker 整页（Tab） ----
   if (mode.k === "picker") {
     const items = pickerItems();
+    const vis = Math.max(1, H - 6);   // B4: 视口滚动窗——项目数超屏高不溢出（Python poff 同语义）
+    const poff = Math.max(0, Math.min(pickerIdx - vis + 1, Math.max(0, items.length - vis)));
     return (
       <Box flexDirection="column" height={H}>
         <Box borderStyle="round" flexDirection="column" paddingX={1}>
           <Text bold color={acc.accent}>{T("picker_t")}</Text>
-          {items.map(([name, cwd, cnt, mt], i) => (
-            <Box key={String(cwd) + i}>
-              <Text backgroundColor={i === pickerIdx ? acc.accent : undefined}
-                color={i === pickerIdx ? "black" : undefined}
-                bold={i === pickerIdx}>
-                {(i === pickerIdx ? "▸ " : "  ") + name + (cwd && cwd === project ? " *" : "")}
+          {items.slice(poff, poff + vis).map(([name, cwd, cnt, mt], i) => {
+            const gi = poff + i;
+            return (
+            <Box key={String(cwd) + gi}>
+              <Text backgroundColor={gi === pickerIdx ? acc.accent : undefined}
+                color={gi === pickerIdx ? "black" : undefined}
+                bold={gi === pickerIdx}>
+                {(gi === pickerIdx ? "▸ " : "  ") + name + (cwd && cwd === project ? " *" : "")}
               </Text>
               <Text dimColor>{String(cnt).padStart(4)}  {relTime(mt, Date.now() / 1000)}</Text>
             </Box>
-          ))}
+            );
+          })}
         </Box>
       </Box>
     );
@@ -399,7 +408,7 @@ export function CcsApp(props: Props) {
             const t = relTime(m.mtime);
             return (
               <Text key={m.path} backgroundColor={sel ? acc.accent : undefined}
-                color={sel ? "black" : undefined}>{pad(t, 7) + " " + (sel ? cut(m.title, LW - 10) : cut(m.title, LW - 10))}</Text>
+                color={sel ? "black" : undefined}>{pad(t, 7) + " " + cut(m.title, LW - 10)}</Text>
             );
           })}
         </Box>

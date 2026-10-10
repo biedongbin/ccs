@@ -4,6 +4,7 @@
  */
 import * as fs from "fs";
 import * as path from "path";
+import { CACHE_VERSION, metaFromCache, type CcsCache } from "./cache.js";
 
 const SEP = path.sep; // posix "/"
 
@@ -326,8 +327,9 @@ export function encodedDirName(p: string, projectsDir: string): string {
   return path.basename(dir);
 }
 
-/** 全量扫描（无缓存旁路）：sidecar 折叠、sdk-cli 过滤、sidecar 标题覆盖、mtime 降序。 */
-export function scanProjects(projectsDir: string, archiveDir: string): SessionMeta[] {
+/** 全量扫描（可带缓存旁路）：sidecar 折叠、sdk-cli 过滤、sidecar 标题覆盖、mtime 降序。 */
+export function scanProjects(projectsDir: string, archiveDir: string,
+  cache?: CcsCache, refresh = false): SessionMeta[] {
   const entries: Array<{ f: string; archived: boolean }> = [];
   const roots = [...new Set([projectsDir, archiveDir])];
   for (const d of roots) {
@@ -346,13 +348,19 @@ export function scanProjects(projectsDir: string, archiveDir: string): SessionMe
     } catch {
       continue;
     }
-    void st;
+    const ns = fs.statSync(f, { bigint: true }).mtimeNs;   // ns 精度：与 Python st_mtime_ns 键一致（默认 stat 无 ns 字段）
+    const hit = refresh || !cache ? null : cache.get(`v${CACHE_VERSION}|${f}|${ns}`);
+    if (hit) {
+      metas.push(metaFromCache(f, st, archived, hit));
+      continue;
+    }
     const r = parseJsonl(f);
     if (r.kind === "sidecar") {
       sidecars.push({ leaf: r.leaf, summary: r.summary });
       continue;
     }
     if (r.kind === "none") continue;
+    if (cache) cache.put(r.meta, ns);
     r.meta.archived = archived;
     if (r.meta.entrypoint === "sdk-cli") continue;
     metas.push(r.meta);

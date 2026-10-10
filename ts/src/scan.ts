@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { SessionMeta, scanProjects } from "./parse.js";
+import { CcsCache } from "./cache.js";
 import { paths } from "./store.js";
 
 function subDirs(base: string): string[] {
@@ -12,14 +13,16 @@ function subDirs(base: string): string[] {
     .map((d) => path.join(base, d));
 }
 
-export function scanAll(): SessionMeta[] {
+export function scanAll(refresh = false): SessionMeta[] {
   const [projects, home] = paths();
+  const cache = new CcsCache(path.join(home, "cache.json"));
   const metas: SessionMeta[] = [];
   for (const d of [...subDirs(projects), ...subDirs(path.join(home, "archive"))]) {
-    metas.push(...scanProjects(d, d));
+    metas.push(...scanProjects(d, d, cache, refresh));
   }
   const archPrefix = path.join(home, "archive") + path.sep;
   for (const m of metas) m.archived = m.path.startsWith(archPrefix);
+  cache.save();   // 保存即修剪（对齐 Python scan）；文件消失/旧版本键在此裁尽
   metas.sort((a, b) => b.mtime - a.mtime);
   return metas;
 }

@@ -34,12 +34,18 @@ export function splitLikeShlex(s: string): string[] {
   return out;
 }
 
+/** shlex.quote 等价：安全字符集原样，其余单引号包裹并转义内部单引号（D1：sid 出自文件名可被构造）。 */
+export function shQuote(s: string): string {
+  if (!/^[A-Za-z0-9_@%+=:,./-]+$/.test(s)) return s ? "'" + s.replace(/'/g, "'\"'\"'") + "'" : "''";   // shlex.quote 同构（含空串）
+  return s;
+}
+
 export function buildResumeArgv(cmd: string, sid: string): string[] {
   if (process.platform === "win32") {
     return splitLikeShlex(resumeCmdFull(cmd).replace("{sid}", sid));
   }
   const sh = process.env.SHELL || "/bin/sh";
-  return [sh, "-ic", resumeCmdFull(cmd).replace("{sid}", sid)];
+  return [sh, "-ic", resumeCmdFull(cmd).replace("{sid}", shQuote(sid))];   // D1: shell 串内 sid 必须加引号
 }
 
 export type ResumeResult =

@@ -167,7 +167,7 @@ ccs --check    # 非交互：统计会话/项目/归档数与最新标题
 ## 测试
 
 ```bash
-python3 test_ccs.py    # assert 式，无框架，47 项检查
+python3 test_ccs.py    # assert 式，无框架，58 项检查
 ```
 
 ## 许可

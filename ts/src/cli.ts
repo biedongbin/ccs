@@ -46,7 +46,17 @@ export async function runConfigPlain(home = ""): Promise<void> {
   console.log(`saved -> ${configPath(home)}`);
 }
 
+function usage(): void {
+  console.log("ccs - Claude Code sessions manager (Node build)\n"
+    + "usage: ccs [-a] [-r] [--config] [--check]\n"
+    + "  -a, --archive   start in archive view\n"
+    + "  -r, --refresh   ignore cache, full rescan\n"
+    + "  --config        open config panel\n"
+    + "  --check         non-interactive summary");
+}
+
 export async function main(argv: string[]): Promise<number> {
+  if (argv.includes("-h") || argv.includes("--help")) { usage(); return 0; }
   if (argv.includes("--check")) return runCheck();
   const firstRun = !fs.existsSync(configPath());
   if (firstRun && !argv.includes("--config")) await runConfigPlain();
@@ -75,7 +85,8 @@ export async function main(argv: string[]): Promise<number> {
 
   // 主 TUI
   const { runTui } = await import("./app.js");
-  await runTui(scanAll(), argv.includes("-a") || argv.includes("--archive"),
+  await runTui(scanAll(argv.includes("-r") || argv.includes("--refresh")),
+    argv.includes("-a") || argv.includes("--archive"),
     String(cfg.resume_cmd || DEFAULT_RESUME_CMD),
     String(cfg.theme || "default"), cfg.custom as Record<string, unknown> | undefined);
   return 0;

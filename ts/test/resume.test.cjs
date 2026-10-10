@@ -121,6 +121,21 @@ process.env.PATH = origPath;
   ok("harvest 收旧跳新", sums2["sid-old"] && sums2["sid-old"].text === "孤儿输出内容" && !sums2["sid-new"]);
   ok("harvest 删 .out", !fs.existsSync(oldOut));
 
+  // D1/D2 审计回归：shQuote 对齐 shlex.quote；语义 argv 收紧 --allowedTools
+  const { shQuote } = require("../dist/resume");
+  ok("shQuote 安全字符原样", shQuote("deadbeef-1234") === "deadbeef-1234");
+  ok("shQuote 引注怪 sid", shQuote("a'; b") === "'a'\"'\"'; b'");
+  ok("shQuote 空串", shQuote("") === "''");
+  ok("resume argv 引注怪 sid", buildResumeArgv("claude --resume {sid}", "a'; b")[2]
+    === "claude --resume 'a'\"'\"'; b'");
+  const { buildSemanticArgv } = require("../dist/summary");
+  const meta = require("../dist/parse");
+  const mm = { sid: "s1", title: "t", cwd: "/w", branch: "", mtime: 0, size: 0, path: "/p",
+    first_user: "", last_reply: "", first_cmds: [], last_cmds: [], all_cmds: [],
+    summary: "", archived: false, entrypoint: "", custom_title: "", ai_title: "" };
+  ok("semantic argv 收紧 allowedTools",
+    JSON.stringify(buildSemanticArgv([mm], "x 修复").slice(-2)) === JSON.stringify(["--allowedTools", "Read"]));
+
   console.log(`${n}/${n} M4+M5 unit tests passed`);
-  process.exit(n >= 21 ? 0 : 1);
+  process.exit(n >= 26 ? 0 : 1);
 })();
