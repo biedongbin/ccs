@@ -44,7 +44,7 @@
 ### Docs & meta
 
 - README (en/zh): three install channels (npx / npm -g / curl), Node-vs-Python key caveats, test counts updated.
-- Review trail published: `ts/REVIEW.md`, `ts/REVIEW_R1..R5.md`, `ts/HISTORY_AUDIT.md`, `ts/HISTORY_VERIFY.md` (33 historical Python issues re-verified against the Node build).
+- Review trail published: `docs/review/REVIEW.md`, `docs/review/REVIEW_R1..R5.md`, `docs/review/HISTORY_AUDIT.md`, `docs/review/HISTORY_VERIFY.md` (33 historical Python issues re-verified against the Node build).
 
 ## 1.0.0 (2026-09-30)
 
