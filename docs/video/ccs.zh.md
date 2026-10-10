@@ -4,8 +4,6 @@ subtitle: 看懂 · 装上 · 会用 · 能配
 theme: 3b1b
 ---
 
-> 换个仓库，上周的会话就找不到了。
-
 ## 背景与设计
 
 ```flow LR
@@ -14,18 +12,13 @@ ccs -> 扫描全库: 所有项目
 扫描全库 -> 回车恢复: 回到启动目录
 ```
 
-> 内置 --resume 只列[当前目录]。
-> ccs [扫描全库]，跨目录一张列表。
-> [回车恢复]，回到当初的启动目录。
+> --resume 只列当前目录；ccs [扫描全库]，回车恢复到原目录。
 
 ## 主界面
 
-![ccs 主从双栏，左列表右详情](docs/video/shots/tui-main.png)
+![完整界面：主从双栏，底部一排快捷键](docs/video/shots/tui-v2-main.png)
 
-- `↑↓` 选择 · `/` 搜索 · `Enter` 恢复
-
-> 完整界面：左列表，右详情。
-> 快捷键：↑↓ 选择，/ 搜索，回车恢复。
+> 左列表，右详情，底部是快捷键栏。
 
 ## 安装
 
@@ -33,25 +26,28 @@ ccs -> 扫描全库: 所有项目
 curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
 ```
 
-> 一行 curl，装完即用。
-> 纯标准库，零依赖，macOS、Linux、Windows 都能跑。
+> 一行 curl，即装即用。
 
-## 搜回上周的会话
+## 第一步：按 / 搜索
 
-![按 / 输入视频，列表实时过滤](docs/video/shots/tui-search.png)
+![按 /，底部弹出搜索框](docs/video/shots/tui-v2-slash.png)
 
-`Enter` 回车 → 恢复到当初的目录
+> 按 /，搜索框出来。
 
-> 按 / 搜「视频」，立刻浮出来。
-> 回车，回到当初的目录，上下文全在。
+## 第二步：输入关键词
+
+![输入「视频」，列表实时过滤到一条](docs/video/shots/tui-v2-done.png)
+
+> 输入「视频」，列表实时过滤。
+
+## 第三步：回车恢复
+
+![选中会话回车，恢复到当初的目录](docs/video/shots/tui-v2-done.png)
+
+> 回车，恢复到当初的目录，上下文全在。
 
 ## 配置：语言与主题
 
-![ccs --config：语言、主题、恢复命令、自定义调色板](docs/video/shots/tui-config.png)
+![ccs --config：语言 10 种、主题 4+ 种、恢复命令、自定义调色板](docs/video/shots/tui-config.png)
 
-- `lang` 界面语言 · 10 种
-- `theme` 配色主题 · 4+ 种 · 支持自定义调色板
-
-> 首次启动引导选择语言和主题。
-> ccs --config 随时再改，配置存 ~/.ccs/config.json。
-> 跨目录找回会话——ccs 一下。
+> ccs --config 随时改：10 语言，4+ 主题。
