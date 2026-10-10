@@ -9,3 +9,7 @@ ts/README.md
 node_modules/
 ts/dist/
 
+.superpowers/
+.ruff_cache/
+.DS_Store
+.aicode/
