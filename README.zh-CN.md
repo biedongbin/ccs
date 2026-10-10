@@ -31,6 +31,12 @@ ccs
 
 就这样。选中会话，回车，当前终端原地接管恢复——回到会话当初的启动目录。
 
+## 演示视频
+
+1 分半看完 ccs 是什么、怎么用（[可离线播放的网页版](docs/video/ccs-demo.zh.html)，或[直接看 MP4](docs/video/ccs-demo.zh.mp4)）：
+
+[![ccs 演示视频](docs/video/ccs-demo.thumb.png)](docs/video/ccs-demo.zh.mp4)
+
 ## 一览
 
 | 能力 | 含义 |

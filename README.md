@@ -31,6 +31,12 @@ ccs
 
 That's it. Pick a session, hit `Enter`, and your terminal is taken over in place — back in the session's original directory.
 
+## Demo video
+
+See what ccs is and how to use it in ~90 seconds ([offline-playable web player](docs/video/ccs-demo.zh.html), or [the raw MP4](docs/video/ccs-demo.zh.mp4) — narration in Chinese):
+
+[![ccs demo video](docs/video/ccs-demo.thumb.png)](docs/video/ccs-demo.zh.mp4)
+
 ## What you get — at a glance
 
 | Capability | What it means |
