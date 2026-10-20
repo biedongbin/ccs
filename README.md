@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.2-blue?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.2.0-blue?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/python-3.9+-green?style=flat-square" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/dependencies-zero-brightgreen?style=flat-square" alt="Zero dependencies">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat-square" alt="Platform">
@@ -33,7 +33,7 @@ That's it. Pick a session, hit `Enter`, and your terminal is taken over in place
 
 ## Demo video
 
-See what ccs is and how to use it in ~90 seconds ([offline-playable web player](docs/video/ccs-demo.zh.html), or [the raw MP4](docs/video/ccs-demo.zh.mp4) — narration in Chinese):
+See what ccs is and how to use it in 30 seconds ([the raw MP4](docs/video/ccs-demo.zh.mp4)):
 
 [![ccs demo video](docs/video/ccs-demo.thumb.png)](docs/video/ccs-demo.zh.mp4)
 
@@ -105,6 +105,7 @@ First launch with no `~/.ccs/config.json` runs a guided setup for language and t
 | `S` | AI semantic search: type natural language, a background `claude -p` matches the current list semantically (last 15 days by default; a time range in the query lifts the window), filters the list to matches; `Esc` clears |
 | Tab | project filter picker (Enter confirm, Esc cancel) |
 | Enter | resume in place: chdir to the session's original directory and exec (template configurable via `resume_cmd`) |
+| `n` | new conversation: chdir to the current row's project directory and exec `launch_cmd` in place (same takeover as resume, no `--resume`) |
 | a / u | archive / restore |
 | A | archive view ↔ main list |
 | d | soft-delete (moved to `~/.ccs/trash/`, see below) |
@@ -145,6 +146,7 @@ A session's directory is the directory Claude Code was launched in — recovered
 | `lang` | `zh` | UI language: `zh en ja ko es fr de ru pt it` |
 | `theme` | `default` | `default` (cyan) · `ocean` (blue) · `dracula` (magenta) · `mono` (no color) |
 | `resume_cmd` | `claude --resume {sid}` | Resume command: fill in just the base command (e.g. `cc`) — `--resume {sid}` is appended automatically; full templates containing `{sid}` also work. Executed via your interactive shell (functions/aliases apply). Example: `"claude --dangerously-skip-permissions"` |
+| `launch_cmd` | `claude --dangerously-skip-permissions` | New-session command (the `n` key): run in the current row's project directory to start a fresh conversation. Same execution chain as `resume_cmd` — interactive shell, so functions/aliases like a `cc()` wrapper work. Example: `"cc"` |
 | `custom` | — | user-defined palettes, see below |
 
 ### Custom themes

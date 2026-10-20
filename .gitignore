@@ -12,3 +12,4 @@ ts/dist/
 .ruff_cache/
 .DS_Store
 .aicode/
+docs/video/hf-ccs/.hyperframes/

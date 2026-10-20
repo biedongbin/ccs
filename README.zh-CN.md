@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.2-blue?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.2.0-blue?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/python-3.9+-green?style=flat-square" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/dependencies-zero-brightgreen?style=flat-square" alt="Zero dependencies">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat-square" alt="Platform">
@@ -33,7 +33,7 @@ ccs
 
 ## 演示视频
 
-1 分半看完 ccs 是什么、怎么用（[可离线播放的网页版](docs/video/ccs-demo.zh.html)，或[直接看 MP4](docs/video/ccs-demo.zh.mp4)）：
+30 秒看完 ccs 是什么、怎么用（[直接看 MP4](docs/video/ccs-demo.zh.mp4)）：
 
 [![ccs 演示视频](docs/video/ccs-demo.thumb.png)](docs/video/ccs-demo.zh.mp4)
 
@@ -105,6 +105,7 @@ ccs --check    # 非交互：统计会话/项目/归档数与最新标题
 | `S` | AI 语义搜索：输入自然语言，后台 `claude -p` 对当前列表（默认最近 15 天；查询含时间范围则放开）做语义匹配，命中集过滤列表，`Esc` 清除 |
 | Tab | 项目过滤弹层（Enter 确认，Esc 取消） |
 | Enter | 在当前终端原地恢复：chdir 回会话原启动目录，exec 接管（命令模板可配，见 `resume_cmd`） |
+| `n` | 新开对话：chdir 到当前行项目目录，原地执行 `launch_cmd`（接管方式与恢复一致，不带 `--resume`） |
 | a / u | 归档 / 还原 |
 | A | 归档区 ↔ 主列表 |
 | d | 软删除（移入 `~/.ccs/trash/`，见下文） |
@@ -145,6 +146,7 @@ ccs --check    # 非交互：统计会话/项目/归档数与最新标题
 | `lang` | `zh` | 界面语言：`zh en ja ko es fr de ru pt it` |
 | `theme` | `default` | `default`（青）· `ocean`（蓝）· `dracula`（紫）· `mono`（无色） |
 | `resume_cmd` | `claude --resume {sid}` | 恢复命令：只填基础命令（如 `cc`），恢复时系统自动追加 `--resume {sid}`；已含 `{sid}` 的完整模板同样兼容。整条交交互 shell 执行（函数/alias 生效）。示例：`"claude --dangerously-skip-permissions"` |
+| `launch_cmd` | `claude --dangerously-skip-permissions` | 新开命令（`n` 键）：在当前行项目目录执行、原地新开对话。执行链路与 `resume_cmd` 一致——整条交交互 shell，`cc()` 之类函数/alias 照常生效。示例：`"cc"` |
 | `custom` | — | 自定义调色板，见下 |
 
 ### 自定义主题
