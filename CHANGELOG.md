@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0 (2026-10-20)
+
+- **AI summary: 5× faster, non-blocking, resumable.** The summary call no longer makes the model `Read` the whole `.jsonl` — ccs now compresses the session into a pure conversation stream (every `user`/`assistant` message with all thinking / tool_use / tool_result blocks kept; only the JSON metadata envelope is dropped, ~7:1) and pipes it to `claude -p` over stdin. Measured 110–330s → 38–60s on real sessions. Transcripts over 8 MB (above `claude -p`'s 10 MB stdin cap) fall back to a temp file + `Read` automatically.
+- **AI summary survives ccs exit.** Jobs are spawned detached (`start_new_session`) and named `sid.pid.t0.out`, so a new ccs adopts a still-running job on startup and keeps showing it; a `result` event is the authoritative completion signal. 400s hard timeout as a backstop.
+- **Live summary progress.** The detail pane shows `summarizing… 47s  62%` — elapsed seconds plus a percentage estimated from the streamed `text_delta` byte count.
+- **`n` new conversation**: in the session panel, `n` chdirs to the current row's project directory and launches a fresh conversation in place — same takeover as `Enter` resume (gone-directory prompt included), just without `--resume`. With a project filter on (Tab), it starts in the selected project.
+- **`launch_cmd` config** (`ccs --config`): the command `n` runs. Default `claude --dangerously-skip-permissions`; fill in your own wrapper (e.g. `cc`) — executed via your interactive shell (`$SHELL -ic`) exactly like `resume_cmd`, so shell functions/aliases work identically. Available in both builds (Python curses + Node ink), first-run plain setup, and the parity baseline.
+
 ## 1.1.2 (2026-10-08)
 
 - **`?` content search**: full-text — every user command in the session (not just first/last 3), the AI summary, and the last reply body (plain `/` keeps searching title / project path / session ID).

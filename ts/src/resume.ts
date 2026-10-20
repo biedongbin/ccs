@@ -7,7 +7,7 @@
 import { spawnSync } from "child_process";
 import * as fs from "fs";
 import type { SessionMeta } from "./parse.js";
-import { resumeCmdFull } from "./config.js";
+import { resumeCmdFull, DEFAULT_LAUNCH_CMD } from "./config.js";
 
 /** Windows 分支：shlex 风格拆分（与 Python os.name=="nt" 分支一致）。 */
 export function splitLikeShlex(s: string): string[] {
@@ -48,6 +48,13 @@ export function buildResumeArgv(cmd: string, sid: string): string[] {
   return [sh, "-ic", resumeCmdFull(cmd).replace("{sid}", shQuote(sid))];   // D1: shell 串内 sid 必须加引号
 }
 
+/** n 新开对话：与 resume 同链路交交互 shell（函数/alias 生效），无 {sid}。 */
+export function buildLaunchArgv(cmd: string = DEFAULT_LAUNCH_CMD): string[] {
+  if (process.platform === "win32") return splitLikeShlex(cmd);
+  const sh = process.env.SHELL || "/bin/sh";
+  return [sh, "-ic", cmd];
+}
+
 export type ResumeResult =
   | { needDir: true; meta: SessionMeta }
   | { needDir: false; status: number | null };
@@ -67,4 +74,13 @@ export function execResumeAt(meta: SessionMeta, cmd: string, dir: string): Resum
   const argv = buildResumeArgv(cmd, meta.sid);
   const sub = spawnSync(argv[0], argv.slice(1), { stdio: "inherit" });
   return { needDir: false, status: sub.error ? 1 : sub.status };   // 坏 SHELL 等 spawn 失败：退出码 1，不假成功
+}
+
+/** n 新开对话：指定目录执行 launch_cmd（不存在则 mkdir，与 resume 同分支）。 */
+export function execLaunchAt(cmd: string, dir: string): { status: number | null } {
+  fs.mkdirSync(dir, { recursive: true });
+  if (process.cwd() !== dir) process.chdir(dir);
+  const argv = buildLaunchArgv(cmd);
+  const sub = spawnSync(argv[0], argv.slice(1), { stdio: "inherit" });
+  return { status: sub.error ? 1 : sub.status };
 }

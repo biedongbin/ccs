@@ -92,7 +92,7 @@ for (const [name, c] of Object.entries(cases)) {
 // ---- argv 对拍：semantic / summary / resume（SHELL 钉死同 dump_py；查询带数字时间词绕开 mtime 窗）----
 process.env.SHELL = "/bin/parity-shell";
 const S = require("../dist/summary.js");
-const { buildResumeArgv } = require("../dist/resume.js");
+const { buildResumeArgv, buildLaunchArgv } = require("../dist/resume.js");
 {
   const semSessions = [];
   for (const fn of fs.readdirSync(PROJ).sort()) {
@@ -102,12 +102,14 @@ const { buildResumeArgv } = require("../dist/resume.js");
   }
   const sem = S.buildSemanticArgv(semSessions, "15天前 修复登录");
   assert.deepStrictEqual(sem, BASE.argv.semantic, "argv.semantic");
-  assert.deepStrictEqual(S.buildSummaryArgv(semSessions[0]), BASE.argv.summary, "argv.summary");
+  assert.deepStrictEqual(S.buildSummaryArgv(), BASE.argv.summary, "argv.summary");
   assert.deepStrictEqual(
     buildResumeArgv("claude --resume {sid}", "sid-weird'; rm -rf x"),
     BASE.argv.resume_full, "argv.resume_full");
   assert.deepStrictEqual(
     buildResumeArgv("cc", "deadbeef-1234"), BASE.argv.resume_base, "argv.resume_base");
+  assert.deepStrictEqual(buildLaunchArgv(), BASE.argv.launch_default, "argv.launch_default");
+  assert.deepStrictEqual(buildLaunchArgv("cc"), BASE.argv.launch_custom, "argv.launch_custom");
   n++;
 }
 

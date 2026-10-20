@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as readline from "readline";
-import { loadConfig, saveConfig, configPath, DEFAULT_RESUME_CMD } from "./config.js";
+import { loadConfig, saveConfig, configPath, DEFAULT_RESUME_CMD, DEFAULT_LAUNCH_CMD } from "./config.js";
 import { setLang, T, relTime } from "./i18n.js";
 import { scanAll } from "./scan.js";
 import { paths } from "./store.js";
@@ -41,6 +41,8 @@ export async function runConfigPlain(home = ""): Promise<void> {
   }
   const raw3 = await ask(`resume_cmd [${String(cfg.resume_cmd || DEFAULT_RESUME_CMD).replace(" --resume {sid}", "")}] (auto appends --resume {sid}): `);
   if (raw3) cfg.resume_cmd = raw3;
+  const raw4 = await ask(`launch_cmd [${String(cfg.launch_cmd || DEFAULT_LAUNCH_CMD)}] (n key, new session): `);
+  if (raw4) cfg.launch_cmd = raw4;
   saveConfig(cfg, home);
   rl.close();
   console.log(`saved -> ${configPath(home)}`);
@@ -88,6 +90,7 @@ export async function main(argv: string[]): Promise<number> {
   await runTui(scanAll(argv.includes("-r") || argv.includes("--refresh")),
     argv.includes("-a") || argv.includes("--archive"),
     String(cfg.resume_cmd || DEFAULT_RESUME_CMD),
+    String(cfg.launch_cmd || DEFAULT_LAUNCH_CMD),
     String(cfg.theme || "default"), cfg.custom as Record<string, unknown> | undefined);
   return 0;
 }

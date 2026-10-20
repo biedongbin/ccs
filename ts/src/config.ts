@@ -7,11 +7,13 @@ import * as path from "path";
 import * as os from "os";
 
 export const DEFAULT_RESUME_CMD = "claude --resume {sid}";
+export const DEFAULT_LAUNCH_CMD = "claude --dangerously-skip-permissions";
 
 export interface CcsConfig {
   lang?: string;
   theme?: string;
   resume_cmd?: string;
+  launch_cmd?: string;
   custom?: Record<string, unknown>;
   [k: string]: unknown;
 }

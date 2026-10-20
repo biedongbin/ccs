@@ -4,11 +4,12 @@ import { Box, Text, useInput, useStdout } from "ink";
 import { SessionMeta } from "./parse.js";
 import { scanAll, doRename, copyBackend, tilde } from "./scan.js";
 import { dw, cut, pad, hardWrap, mdLines } from "./width.js";
-import { loadSummaries, startSummary, startSemantic, pollJobs, harvestSummaries } from "./summary.js";
-import { execResume, execResumeAt } from "./resume.js";
+import { loadSummaries, startSummary, startSemantic, pollJobs, harvestSummaries, adoptJobs, JOBS, jobProgress, hasActiveJobs } from "./summary.js";
+import { execResume, execResumeAt, execLaunchAt } from "./resume.js";
 import { resumeCmdFull } from "./config.js";
 import { T, relTime } from "./i18n.js";
 import * as os from "os";
+import * as fs from "fs";
 import * as pth from "path";
 import { spawnSync } from "child_process";
 import { doArchive, doRestore, doTrash, paths } from "./store.js";
@@ -33,11 +34,12 @@ interface Props {
   initialSessions: SessionMeta[];
   archiveView: boolean;
   resumeCmd: string;
+  launchCmd: string;
   theme: string;
   custom?: Record<string, unknown>;
 }
 
-type Mode = { k: "list" } | { k: "search" } | { k: "rename" } | { k: "dir" } | { k: "picker" }
+type Mode = { k: "list" } | { k: "search" } | { k: "rename" } | { k: "dir"; launch?: boolean } | { k: "picker" }
   | { k: "semantic" };
 
 export function CcsApp(props: Props) {
@@ -48,6 +50,7 @@ export function CcsApp(props: Props) {
   const [project, setProject] = useState<string | null>(pth.resolve(process.cwd()));   // R1-1: 无条件锚定启动目录（Python 等价），Esc 展开全部
   const [cursor, setCursor] = useState(0);
   const [dscroll, setDscroll] = useState(0);
+  const [, setForceTick] = useState(0);              // 活跃总结作业：驱动进度刷新（无事件也重绘）
   const offRef = useRef(0);                         // 左栏滚动滞后窗口（Python _clamp_off），渲染期镜像
   const [lastSid, setLastSid] = useState("");
   const [pager, setPager] = useState<{ open: boolean; off: number }>({ open: false, off: 0 });
@@ -97,7 +100,10 @@ export function CcsApp(props: Props) {
   useEffect(() => {
     const iv = setInterval(() => {
       const evts = pollJobs();
-      if (!evts.length) return;
+      if (!evts.length) {
+        if (hasActiveJobs()) setForceTick((n) => n + 1);   // 活跃作业：驱动进度刷新
+        return;
+      }
       let semanticSids: string[] | null = null;
       let hadSummary = false;
       for (const e of evts) {
@@ -171,7 +177,7 @@ export function CcsApp(props: Props) {
       else if (input && !key.ctrl && !key.meta) setBuf((b) => b + input);
       return;
     }
-    if (mode.k === "dir" && cur) {                                  // resume 目录缺失询问
+    if (mode.k === "dir") {                                  // resume / n-launch 目录缺失询问
       if (key.escape) setMode({ k: "list" });
       else if ((key.return || input === "\n")) {
         const d = buf.trim();
@@ -179,8 +185,13 @@ export function CcsApp(props: Props) {
         if (d) {
           const t = d.startsWith("~") ? os.homedir() + d.slice(1)
             : pth.isAbsolute(d) ? d : pth.join(os.homedir(), d);
-          const r = execResumeAt(cur, props.resumeCmd, t);
-          process.exit(r.needDir ? 1 : (r.status ?? 0));
+          if (mode.launch || !cur) {
+            const r = execLaunchAt(props.launchCmd, t);
+            process.exit(r.status ?? 0);
+          } else {
+            const r = execResumeAt(cur, props.resumeCmd, t);
+            process.exit(r.needDir ? 1 : (r.status ?? 0));
+          }
         }
       }
       else if (key.backspace || key.delete) setBuf((b) => b.slice(0, -1));
@@ -247,6 +258,14 @@ export function CcsApp(props: Props) {
       else { process.stdout.write("\x1b[2J\x1b[H"); process.exit(r.status ?? 0); }
       }
     }
+    else if (input === "n") {                        // 当前行项目目录新开对话（接管方式与恢复一致）
+      const dir = cur?.cwd || project || process.cwd();
+      if (!fs.existsSync(dir)) { setBuf(""); setMode({ k: "dir", launch: true }); }
+      else {
+        const r = execLaunchAt(props.launchCmd, dir);
+        process.stdout.write("\x1b[2J\x1b[H"); process.exit(r.status ?? 0);
+      }
+    }
     else if (key.escape) { setQuery(""); setContent(false); setSemantic(null); setSemQ(""); setProject(null); setArchiveView(false); setCursor(0); }
   };
   useInput((raw: string, k: Parameters<typeof onKey>[1]) => {
@@ -297,6 +316,10 @@ export function CcsApp(props: Props) {
     if (s && s.text) {
       out.push(bar, { text: T("ai_summary"), kind: "lab" });
       for (const ln of mdLines(s.text, width)) out.push({ text: ln, kind: "val" });
+    } else if (JOBS.has(m.sid)) {
+      const [el, pct] = jobProgress(JOBS.get(m.sid)!);
+      out.push(bar, { text: T("ai_summary"), kind: "lab" },
+        { text: T("sum_run", { t: el, p: pct }), kind: "dim" });
     }
     const lc = m.last_cmds || [];
     const shown = [...(m.first_cmds || [])];
@@ -392,7 +415,7 @@ export function CcsApp(props: Props) {
     : mode.k === "rename"
       ? T("rename_p", { t: (cur?.title || "").slice(0, 24) }) + buf
       : mode.k === "dir"
-        ? T("gone_input", { p: cur?.cwd || "-" }) + buf
+        ? T("gone_input", { p: (mode.launch ? (cur?.cwd || project) : cur?.cwd) || "-" }) + buf
         : msg;
 
   return (
@@ -429,13 +452,15 @@ export function CcsApp(props: Props) {
 }
 
 export async function runTui(initialSessions: SessionMeta[], archiveView: boolean,
-                       resumeCmd: string, theme: string, custom?: Record<string, unknown>): Promise<void> {
+                       resumeCmd: string, launchCmd: string,
+                       theme: string, custom?: Record<string, unknown>): Promise<void> {
   harvestSummaries();
+  adoptJobs();
   const { render } = await import("ink");
   return new Promise((resolve) => {
     const inst = render(
       <CcsApp initialSessions={initialSessions} archiveView={archiveView}
-        resumeCmd={resumeCmd} theme={theme} custom={custom} />, { exitOnCtrlC: false });
+        resumeCmd={resumeCmd} launchCmd={launchCmd} theme={theme} custom={custom} />, { exitOnCtrlC: false });
     // 退出由 q/Enter 触发 process.exit；兜底 unmount
     process.on("beforeExit", () => { inst.unmount(); resolve(); });
   });

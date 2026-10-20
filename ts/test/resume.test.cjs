@@ -14,7 +14,7 @@ fs.mkdirSync(HOME, { recursive: true });
 
 const { resumeCmdFull, userThemes, loadConfig, saveConfig, DEFAULT_RESUME_CMD } =
   require("../dist/config");
-const { buildResumeArgv, splitLikeShlex, execResumeAt } = require("../dist/resume");
+const { buildResumeArgv, buildLaunchArgv, splitLikeShlex, execResumeAt } = require("../dist/resume");
 const { buildSummaryArgv, startSummary, pollJobs, loadSummaries, harvestSummaries } =
   require("../dist/summary");
 
@@ -53,6 +53,16 @@ ok("argv SHELL 缺省 /bin/sh", JSON.stringify(buildResumeArgv("claude --resume 
   JSON.stringify(["/bin/sh", "-ic", "claude --resume s1"]));
 ok("shlex 拆分", JSON.stringify(splitLikeShlex('claude -p "a b"  --x')) ===
   JSON.stringify(["claude", "-p", "a b", "--x"]));
+
+// ---- launch（n 新开对话，与 resume 同链路） ----
+process.env.SHELL = "/bin/zsh";
+ok("launch argv 交交互 shell", JSON.stringify(buildLaunchArgv("cc")) ===
+  JSON.stringify(["/bin/zsh", "-ic", "cc"]));
+ok("launch argv 默认命令", JSON.stringify(buildLaunchArgv()) ===
+  JSON.stringify(["/bin/zsh", "-ic", "claude --dangerously-skip-permissions"]));
+delete process.env.SHELL;
+ok("launch argv SHELL 缺省 /bin/sh", JSON.stringify(buildLaunchArgv("cc")) ===
+  JSON.stringify(["/bin/sh", "-ic", "cc"]));
 // win32 分支：子进程 ESM 桩（dist 为 ESM，new Function 不可用）
 const resSrc = fs.readFileSync(path.join(ROOT, "dist", "resume.js"), "utf-8");
 const stubCode = 'Object.defineProperty(process,"platform",{value:"win32"});\n'
@@ -71,18 +81,28 @@ const r = execResumeAt(meta, "true", proj);   // true 忽略 --resume 参数
 ok("execResumeAt 状态透传", r.needDir === false && r.status === 0);
 
 // ---- summary ----
-const meta2 = { sid: "sid-sum", cwd: proj, title: "总结目标", path: proj + "/x.jsonl" };
-const argvS = buildSummaryArgv(meta2);
+const argvS = buildSummaryArgv();
 ok("summary argv 形状", argvS[0] === "claude" && argvS[1] === "-p" &&
-  argvS.includes("--allowedTools") && argvS.includes("Read"));
-ok("prompt 逐字含 sessionId", argvS[2].includes("sessionId=sid-sum"));
+  argvS.includes("--output-format") && argvS.includes("stream-json") &&
+  argvS.includes("--include-partial-messages"));
+ok("summary prompt 含分节要求", argvS[2].includes("核心目标") && argvS[2].includes("进度百分比"));
+
+// 会话源文件（writeConvStream 读它）：一条 user + 一条 assistant
+const meta2 = { sid: "sid-sum", cwd: proj, title: "总结目标", path: proj + "/x.jsonl" };
+fs.writeFileSync(meta2.path, [
+  JSON.stringify({ type: "user", message: { role: "user", content: "目标" } }),
+  JSON.stringify({ type: "assistant", message: { role: "assistant", content: "进度 100%" } }),
+].join("\n"));
 
 // 假 claude：PATH 前置 stub 脚本
 const stubDir = path.join(os.tmpdir(), "ccs_stub_bin");
 fs.rmSync(stubDir, { recursive: true, force: true });
 fs.mkdirSync(stubDir, { recursive: true });
 fs.writeFileSync(path.join(stubDir, "claude"),
-  "#!/bin/sh\necho '## 总结输出\n- 目标 A\n- 进度 100%'\n");
+  "#!/bin/sh\n" +
+  "echo '{\"type\":\"stream_event\",\"event\":{\"delta\":{\"type\":\"text_delta\",\"text\":\"## 总结输出\"}}}'\n" +
+  "echo '{\"type\":\"stream_event\",\"event\":{\"delta\":{\"type\":\"text_delta\",\"text\":\"进度 100%\"}}}'\n" +
+  "echo '{\"type\":\"result\",\"result\":\"## 总结输出 进度 100%\"}'\n");
 fs.chmodSync(path.join(stubDir, "claude"), 0o755);
 const envWithStub = { ...process.env, PATH: stubDir + ":" + process.env.PATH };
 const origPath = process.env.PATH;

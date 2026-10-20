@@ -1,5 +1,15 @@
 {
   "argv": {
+    "launch_custom": [
+      "/bin/parity-shell",
+      "-ic",
+      "cc"
+    ],
+    "launch_default": [
+      "/bin/parity-shell",
+      "-ic",
+      "claude --dangerously-skip-permissions"
+    ],
     "resume_base": [
       "/bin/parity-shell",
       "-ic",
@@ -20,9 +30,11 @@
     "summary": [
       "claude",
       "-p",
-      "请读取并分析这个 Claude Code 会话记录文件：/Users/biedongbin/workspace/github/ccs/ts/fixtures/projects/-w-projA/ai-title.jsonl（sessionId=sid-ai）。输出（中文 Markdown，简洁分节）：1) 会话/需求的所有核心目标；2) 整体任务工作计划与进度百分比；3) 当前代码分支状态；4) 本会话解决了哪些问题，列出问题清单。",
-      "--allowedTools",
-      "Read"
+      "以下是某个 Claude Code 会话的完整对话流（含用户指令、助手思考、工具调用与结果）。请据此输出中文 Markdown（简洁分节）：1) 会话/需求的所有核心目标；2) 整体任务工作计划与进度百分比；3) 当前代码分支状态；4) 本会话解决了哪些问题，列出问题清单。",
+      "--output-format",
+      "stream-json",
+      "--include-partial-messages",
+      "--verbose"
     ]
   },
   "launch_dir": {

@@ -1,7 +1,7 @@
 /** 两页式配置面板（与 Python _config_tui/_detail_page 同构，无弹层）。 */
 import React, { useEffect, useState } from "react";
 import { Box, Text, useInput, useStdout } from "ink";
-import { CcsConfig, DEFAULT_RESUME_CMD, resumeCmdFull, userThemes, saveConfig, configPath, loadConfig } from "./config.js";
+import { CcsConfig, DEFAULT_RESUME_CMD, DEFAULT_LAUNCH_CMD, resumeCmdFull, userThemes, saveConfig, configPath, loadConfig } from "./config.js";
 import { T, LANG_NAMES, setLang } from "./i18n.js";
 import { cut, mdLines, pad } from "./width.js";
 
@@ -9,6 +9,7 @@ const DESC: Record<string, string> = {
   lang: "界面显示语言，共 10 种。影响菜单、提示、帮助行与错误文案。保存后下次启动生效。",
   theme: "配色主题（仅前景色，背景跟随终端）。default 青 / ocean 蓝 / dracula 紫 / mono 无色。深色终端建议 default 或 dracula，浅色终端建议 ocean 或 mono。自定义调色板自动追加在列表末尾。",
   resume: "恢复命令。只需填基础命令（如 cc）——按 Enter 恢复时系统自动追加 --resume {sid} 并替换为会话 ID；已含 {sid} 的完整模板同样兼容。整条命令交给你的交互 shell 执行，函数、alias、内嵌环境变量与终端行为一致。",
+  launch: "新开命令（n 键）。在会话面板按 n 即切换到当前行项目目录并执行此命令、原地新开一个对话（不恢复旧会话）。默认 claude --dangerously-skip-permissions；与恢复命令同链路：整条交交互 shell 执行，函数/alias 生效。",
   custom: "自定义调色板：Enter 创建——输入主题名，选强调色与消息色（各 8 种，带色块预览），保存后自动启用；已有主题可使用或删除。强调色作用于边框/选中行，消息色作用于底部消息行。",
 };
 
@@ -30,6 +31,9 @@ function rows(cfg: CcsConfig): Row[] {
     { key: "resume_cmd", label: "恢复命令 resume_cmd",
       value: resumeCmdFull(String(cfg.resume_cmd || DEFAULT_RESUME_CMD)),
       desc: DESC["resume"] },
+    { key: "launch_cmd", label: "新开命令 launch_cmd",
+      value: String(cfg.launch_cmd || DEFAULT_LAUNCH_CMD),
+      desc: DESC["launch"] },
     { key: "custom", label: "自定义调色板 custom", value: `${Object.keys(customs).length} 项`,
       desc: DESC["custom"] },
   ];
@@ -37,7 +41,7 @@ function rows(cfg: CcsConfig): Row[] {
 
 type Page =
   | { k: "list" } | { k: "lang" } | { k: "theme" } | { k: "resume_view" } | { k: "resume" } | { k: "custom" }
-  | { k: "name" } | { k: "accent" } | { k: "msgc" };
+  | { k: "launch_view" } | { k: "launch" } | { k: "name" } | { k: "accent" } | { k: "msgc" };
 
 export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved: boolean) => void }) {
   const { stdout } = useStdout();
@@ -91,6 +95,26 @@ export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved:
       else if (input && !key.ctrl && !key.meta) setBuf((b) => b + input);
       return;
     }
+    if (page.k === "launch_view") {                            // 两步式：先读说明，Enter 才编辑
+      if (key.escape || input === "q") setPage({ k: "list" });
+      else if (key.return || input === "\n") {
+        setBuf(String(cfg.launch_cmd || DEFAULT_LAUNCH_CMD));
+        setPage({ k: "launch" });
+      }
+      return;
+    }
+    if (page.k === "launch") {                                 // launch_cmd 编辑（整条原样）
+      if (key.escape) { setMsg("已取消 cancelled"); setPage({ k: "list" }); }
+      else if ((key.return || input === "\n")) {
+        const v = buf.trim();
+        if (v) { cfg.launch_cmd = v; setCfg({ ...cfg }); setMsg("已更新 updated"); }
+        else setMsg("留空不改动 unchanged");
+        setPage({ k: "list" });
+      }
+      else if (key.backspace || key.delete) setBuf((b) => b.slice(0, -1));
+      else if (input && !key.ctrl && !key.meta) setBuf((b) => b + input);
+      return;
+    }
 
     const nav = (len: number) => (i: number) => Math.max(0, Math.min(i, len - 1));
     if (page.k === "list") {
@@ -105,6 +129,9 @@ export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved:
         else if (k === "theme") { setIdx(0); setPage({ k: "theme" }); }
         else if (k === "resume_cmd") {
           setPage({ k: "resume_view" });
+        }
+        else if (k === "launch_cmd") {
+          setPage({ k: "launch_view" });
         }
         else { setIdx(0); setPage({ k: "custom" }); }
       }
@@ -272,6 +299,30 @@ export function ConfigApp({ cfgIn, onDone }: { cfgIn: CcsConfig; onDone: (saved:
         <Text dimColor>{"-".repeat(Math.max(4, W - 4))}</Text>
         <Text color="green">{"当前完整命令: " + resumeCmdFull(String(cfg.resume_cmd || DEFAULT_RESUME_CMD))}</Text>
         <Text bold>{`resume_cmd + --resume {sid}: ${buf}▌`}</Text>
+        <Text dimColor>{" Enter 确认 · Esc 取消"}</Text>
+      </Box>
+    );
+  }
+  if (page.k === "launch_view") {
+    return (
+      <Box flexDirection="column">
+        {detailHead("新开命令 / launch cmd")}
+        {descBlock(DESC["launch"])}
+        <Text dimColor>{"-".repeat(Math.max(4, W - 4))}</Text>
+        <Text color="green">{"当前值 current: " + String(cfg.launch_cmd || DEFAULT_LAUNCH_CMD)}</Text>
+        <Text bold backgroundColor="cyan" color="black">{" ▸ 编辑命令 edit command"}</Text>
+        <Text dimColor>{" Enter 编辑 · Esc 返回列表"}</Text>
+      </Box>
+    );
+  }
+  if (page.k === "launch") {
+    return (
+      <Box flexDirection="column">
+        {detailHead("新开命令 / launch cmd")}
+        {descBlock(DESC["launch"])}
+        <Text dimColor>{"-".repeat(Math.max(4, W - 4))}</Text>
+        <Text color="green">{"当前值 current: " + String(cfg.launch_cmd || DEFAULT_LAUNCH_CMD)}</Text>
+        <Text bold>{`launch_cmd: ${buf}▌`}</Text>
         <Text dimColor>{" Enter 确认 · Esc 取消"}</Text>
       </Box>
     );

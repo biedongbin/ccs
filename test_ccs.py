@@ -616,6 +616,29 @@ def test_resume_shell_function_fallback():
         else:
             os.environ["SHELL"] = old
 
+def test_build_launch_argv():
+    """n 新开对话：与 resume 同链路交交互 shell，无 {sid}；默认命令可整条自定义。"""
+    old = os.environ.get("SHELL")
+    os.environ["SHELL"] = "/bin/zsh"
+    try:
+        assert ccs.build_launch_argv() == \
+            ["/bin/zsh", "-ic", "claude --dangerously-skip-permissions"]
+        assert ccs.build_launch_argv("cc") == ["/bin/zsh", "-ic", "cc"]
+        assert ccs.build_launch_argv("cc")[0] != "cc"           # 函数/alias 经 shell 解析，不 execvp clang
+        assert ccs.DEFAULT_LAUNCH_CMD == "claude --dangerously-skip-permissions"
+    finally:
+        if old is None:
+            os.environ.pop("SHELL", None)
+        else:
+            os.environ["SHELL"] = old
+
+def test_resolve_dir_ok_shortcut():
+    """目录健在时 _resolve_dir 直接放行（resume 与 n 新开共用，无交互）。"""
+    d = tempfile.mkdtemp()
+    eff, err = ccs._resolve_dir(None, 0, d)
+    assert eff == d and err is None
+    assert not os.path.isdir(os.path.join(d, "gone"))   # gone 路径需 curses 交互，TUI 手测覆盖
+
 def test_last_reply_budget():
     """末答预算 500→4000：长回复不再截断成半句。"""
     td, proj, arch = _fake_tree()
@@ -710,6 +733,93 @@ def test_cache_save_prunes():
                 os.environ.pop(k, None)
             else:
                 os.environ[k] = v
+
+def test_conv_stream_strips_metadata():
+    """对话流只留 user/assistant 的 message，剥离元数据信封（零失真）。"""
+    td = tempfile.mkdtemp()
+    src = os.path.join(td, "s.jsonl")
+    dst = os.path.join(td, "s.conv")
+    write_jsonl(src, [
+        {"type": "user", "message": {"role": "user", "content": "首问"},
+         "cwd": "/w", "snapshot": {"huge": "x" * 100}},
+        {"type": "last-prompt", "promptId": "p1", "rendered": [{"content": "重复副本" * 50}]},
+        {"type": "assistant", "message": {"role": "assistant",
+         "content": [{"type": "text", "text": "回答"}, {"type": "tool_use", "name": "Bash"}]}},
+        {"type": "user", "isSidechain": True, "message": {"role": "user", "content": "子代理"}},
+    ])
+    assert ccs.write_conv_stream(src, dst) is True
+    lines = [json.loads(l) for l in open(dst, encoding="utf-8") if l.strip()]
+    assert len(lines) == 2                                   # 元数据行 + sidechain 均剔除
+    assert lines[0] == {"role": "user", "content": "首问"}
+    assert lines[1]["content"][1] == {"type": "tool_use", "name": "Bash"}   # 工具块保留（零失真）
+
+def test_parse_stream_out_progress_and_result():
+    """stream-json 解析：text_delta 累加产出；result 事件给最终文本并标记完成。"""
+    td = tempfile.mkdtemp()
+    p = os.path.join(td, "o.out")
+    with open(p, "w", encoding="utf-8") as f:
+        f.write(json.dumps({"type": "stream_event",
+                            "event": {"delta": {"type": "text_delta", "text": "abc"}}}) + "\n")
+        f.write(json.dumps({"type": "stream_event",
+                            "event": {"delta": {"type": "text_delta", "text": "de"}}}) + "\n")
+    text, produced, saw = ccs.parse_stream_out(p)
+    assert text is None and produced == 5 and saw is False    # 半截：无 result
+    with open(p, "a", encoding="utf-8") as f:
+        f.write(json.dumps({"type": "result", "result": "abcde"}) + "\n")
+    text, produced, saw = ccs.parse_stream_out(p)
+    assert text == "abcde" and produced == 5 and saw is True   # 完整：见 result
+
+def test_adopt_finishes_completed_result():
+    """收养：.out 已含 result（进程僵死）→ 直接收编，不注册为运行中。"""
+    old = os.environ.get("CCS_HOME")
+    td = tempfile.mkdtemp()
+    os.environ["CCS_HOME"] = td
+    try:
+        d = os.path.join(td, "summarize"); os.makedirs(d, exist_ok=True)
+        outp = os.path.join(d, "sid-done.99999.1000.out")
+        with open(outp, "w", encoding="utf-8") as f:
+            f.write(json.dumps({"type": "result", "result": "已完成总结"}) + "\n")
+        ccs.adopt_jobs()
+        assert "sid-done" not in ccs.JOBS                   # 不进运行中
+        assert not os.path.exists(outp)                     # .out 已清
+        assert ccs.load_summaries()["sid-done"]["text"] == "已完成总结"
+    finally:
+        if old is None:
+            os.environ.pop("CCS_HOME", None)
+        else:
+            os.environ["CCS_HOME"] = old
+
+def test_adopt_registers_running_job():
+    """收养：.out 无 result 且 pid 存活（本进程自身）→ 注册为运行中，保留文件。"""
+    old = os.environ.get("CCS_HOME")
+    td = tempfile.mkdtemp()
+    os.environ["CCS_HOME"] = td
+    try:
+        d = os.path.join(td, "summarize"); os.makedirs(d, exist_ok=True)
+        outp = os.path.join(d, f"sid-run.{os.getpid()}.{int(ccs._time.time())}.out")
+        open(outp, "w").close()
+        ccs.adopt_jobs()
+        assert "sid-run" in ccs.JOBS and ccs.JOBS["sid-run"]["proc"] is None
+        assert os.path.exists(outp)
+    finally:
+        if old is None:
+            os.environ.pop("CCS_HOME", None)
+        else:
+            os.environ["CCS_HOME"] = old
+
+def test_summary_argv_two_paths():
+    """小对话流走 stdin（无 Read 工具）；大对话流走文件路径（含 Read）。"""
+    small = ccs.build_summary_argv()
+    assert "--allowedTools" not in small and small[1] == "-p"
+    assert "--output-format" in small and "stream-json" in small
+    big = ccs.build_summary_file_argv("/tmp/x.conv")
+    assert "--allowedTools" in big and "Read" in big
+    assert "/tmp/x.conv" in big[2] and "--output-format" in big
+
+def test_sum_run_shows_seconds_and_pct():
+    """详情面板运行中行含秒数与百分比占位（sum_run 模板）。"""
+    t = ccs.T("sum_run").format(t=87, p=62)
+    assert "87" in t and "62" in t
 
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]

@@ -8,12 +8,16 @@ import * as path from "path";
 import type { SessionMeta } from "./parse.js";
 import { ccsHome } from "./config.js";
 
-/** key -> {proc, out, title, kind}；kind: "summary" | "semantic"；随进程退出即弃。 */
+/** key -> {proc, out, title, kind}；summary 作业跨 ccs 退出存活（detached + pid.t0 自描述）。 */
 export interface Job {
-  proc: ReturnType<typeof spawn>;
+  proc: ReturnType<typeof spawn> | null;   // null = 收养的作业（非本会话 spawn）
   out: string;
   title: string;
   kind?: "summary" | "semantic";
+  conv?: string;
+  t0?: number;
+  pid?: number;
+  done?: boolean;
 }
 export const JOBS = new Map<string, Job>();
 
@@ -72,34 +76,165 @@ export function saveSummaries(sums: Record<string, { text: string; ts: number }>
 }
 
 /** prompt 从 Python build_summary_argv 逐字复制。 */
-export function buildSummaryArgv(m: SessionMeta): string[] {
-  const prompt =
-    `请读取并分析这个 Claude Code 会话记录文件：${m.path}（sessionId=${m.sid}）。` +
-    "输出（中文 Markdown，简洁分节）：" +
-    "1) 会话/需求的所有核心目标；" +
-    "2) 整体任务工作计划与进度百分比；" +
-    "3) 当前代码分支状态；" +
-    "4) 本会话解决了哪些问题，列出问题清单。";
-  return ["claude", "-p", prompt, "--allowedTools", "Read"];
+export const SUMMARY_TIMEOUT = 400;          // 兜底上限（秒）
+export const EXPECTED_BYTES = 4000;          // 进度估算基准
+export const STDIN_MAX = 8 * 1024 * 1024;    // claude -p stdin 硬上限 10MB，留余量
+
+const SUMMARY_ASK =
+  "请据此输出中文 Markdown（简洁分节）：" +
+  "1) 会话/需求的所有核心目标；" +
+  "2) 整体任务工作计划与进度百分比；" +
+  "3) 当前代码分支状态；" +
+  "4) 本会话解决了哪些问题，列出问题清单。";
+
+/** prompt 从 Python SUMMARY_PROMPT 逐字复制。 */
+export const SUMMARY_PROMPT =
+  "以下是某个 Claude Code 会话的完整对话流（含用户指令、助手思考、工具调用与结果）。" + SUMMARY_ASK;
+
+export function buildSummaryArgv(): string[] {
+  return ["claude", "-p", SUMMARY_PROMPT,
+    "--output-format", "stream-json", "--include-partial-messages", "--verbose"];
+}
+
+/** 大对话流（>8MB，超 stdin 上限）改走文件路径 + Read 工具。 */
+export function buildSummaryFileArgv(convPath: string): string[] {
+  return ["claude", "-p", `请读取并分析这个对话流文件：${convPath}。` + SUMMARY_ASK,
+    "--allowedTools", "Read",
+    "--output-format", "stream-json", "--include-partial-messages", "--verbose"];
+}
+
+/** 把 .jsonl 压成纯对话流（仅 user/assistant 的 message），零失真剥离元数据信封。 */
+export function writeConvStream(src: string, dst: string): boolean {
+  try {
+    const lines = fs.readFileSync(src, "utf-8").split("\n");
+    const out: string[] = [];
+    for (const line of lines) {
+      if (!line) continue;
+      let o: any;
+      try { o = JSON.parse(line); } catch { continue; }
+      if (!o || typeof o !== "object") continue;
+      if (o.type !== "user" && o.type !== "assistant") continue;
+      if (o.isSidechain) continue;
+      const m = o.message;
+      if (!m || typeof m !== "object") continue;
+      out.push(JSON.stringify({ role: m.role, content: m.content }));
+    }
+    fs.writeFileSync(dst, out.join("\n"), "utf-8");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function pidAlive(pid: number): boolean {
+  try { process.kill(pid, 0); return true; } catch { return false; }
+}
+
+/** 解析 stream-json 输出：(最终文本|null, 已产出字节数, 是否见 result)。半截输出不抛错。 */
+export function parseStreamOut(p: string): [string | null, number, boolean] {
+  let text: string | null = null;
+  let produced = 0;
+  let sawResult = false;
+  let raw = "";
+  try { raw = fs.readFileSync(p, "utf-8"); } catch { return [null, 0, false]; }
+  for (const line of raw.split("\n")) {
+    if (!line) continue;
+    let o: any;
+    try { o = JSON.parse(line); } catch { continue; }
+    if (!o || typeof o !== "object") continue;
+    if (o.type === "result") {
+      sawResult = true;
+      if (typeof o.result === "string") text = o.result;
+    } else if (o.type === "stream_event") {
+      const d = o.event?.delta;
+      if (d?.type === "text_delta" && typeof d.text === "string") produced += d.text.length;
+    }
+  }
+  return [text, produced, sawResult];
+}
+
+/** (已运行秒数, 估算百分比)。 */
+export function jobProgress(jb: Job): [number, number] {
+  const t0 = jb.t0 || 0;
+  const el = t0 ? Math.floor(Date.now() / 1000 - t0) : 0;
+  const [, produced] = parseStreamOut(jb.out);
+  const pct = jb.done ? 100 : Math.min(95, Math.floor((produced * 100) / EXPECTED_BYTES));
+  return [el, pct];
+}
+
+export function hasActiveJobs(): boolean {
+  return JOBS.size > 0;
 }
 
 export function startSummary(m: SessionMeta): boolean {
   const d = path.join(ccsHome(), "summarize");
   fs.mkdirSync(d, { recursive: true });
-  const outp = path.join(d, `${m.sid}.out`);
+  const t0 = Math.floor(Date.now() / 1000);
+  const conv = path.join(d, `${m.sid}.conv`);
+  if (!writeConvStream(m.path, conv)) return false;
+  const outp = path.join(d, `${m.sid}.${process.pid}.${t0}.out`);   // 自描述 sid.pid.t0.out
   try {
-    const fd = fs.openSync(outp, "w");
-    const argv = buildSummaryArgv(m);
+    const big = fs.statSync(conv).size > STDIN_MAX;   // 超 stdin 上限 → 走文件路径 + Read
+    const fdOut = fs.openSync(outp, "w");
+    const fdIn = big ? fs.openSync("/dev/null", "r") : fs.openSync(conv, "r");
+    const argv = big ? buildSummaryFileArgv(conv) : buildSummaryArgv();
     const proc = spawn(argv[0], argv.slice(1), {
-      stdio: ["ignore", fd, "ignore"],
+      stdio: [fdIn, fdOut, "ignore"],
       cwd: m.cwd || undefined,
+      detached: true,               // start_new_session 等价：脱离会话，ccs 退出不被 SIGHUP 连带
     });
-    fs.closeSync(fd);   // R4-1: spawn 已 dup fd，父进程侧必须关闭——否则每次 s 键泄 1 个 fd
+    fs.closeSync(fdIn);
+    fs.closeSync(fdOut);            // spawn 已 dup fd，父侧必须关闭
     proc.unref();
-    JOBS.set(m.sid, { proc, out: outp, title: m.title });
+    JOBS.set(m.sid, { proc, out: outp, conv, title: m.title, t0, pid: proc.pid });
     return true;
   } catch {
+    try { fs.unlinkSync(conv); } catch { /* ignore */ }
     return false;
+  }
+}
+
+function finishJob(sid: string, jb: Job): boolean {
+  const [text] = parseStreamOut(jb.out);
+  const ok = !!text;
+  if (ok) {
+    const sums = loadSummaries();
+    sums[sid] = { text: text!.slice(0, 20000), ts: Date.now() / 1000 };
+    saveSummaries(sums);
+  }
+  for (const p of [jb.out, jb.conv]) {
+    if (p) { try { fs.unlinkSync(p); } catch { /* ignore */ } }
+  }
+  return ok;
+}
+
+/** 启动收养：扫 *.out 解析 sid.pid.t0；pid 存活→注册续显，已死→收编，超时→kill。 */
+export function adoptJobs(): void {
+  const d = path.join(ccsHome(), "summarize");
+  let names: string[];
+  try { names = fs.readdirSync(d); } catch { return; }
+  const now = Date.now() / 1000;
+  for (const fn of names) {
+    if (!fn.endsWith(".out") || fn === "semantic.out") continue;
+    const parts = fn.slice(0, -4).split(".");
+    if (parts.length < 3) continue;
+    const t0s = parts.pop()!, pids = parts.pop()!, sid = parts.join(".");
+    const pid = Number(pids), t0 = Number(t0s);
+    if (!Number.isFinite(pid) || !Number.isFinite(t0)) continue;
+    const outp = path.join(d, fn);
+    const conv = path.join(d, `${sid}.conv`);
+    const jb: Job = { proc: null, out: outp, conv, title: sid, t0, pid };
+    const saw = parseStreamOut(outp)[2];
+    if (saw) {                                        // 已见 result：结果完整，直接收编
+      finishJob(sid, jb);
+    } else if (now - t0 > SUMMARY_TIMEOUT) {          // 无 result 且超时：kill 并清
+      try { process.kill(pid, "SIGKILL"); } catch { /* ignore */ }
+      for (const p of [outp, conv]) { try { fs.unlinkSync(p); } catch { /* ignore */ } }
+    } else if (pidAlive(pid)) {
+      JOBS.set(sid, jb);                              // 仍在跑：续显
+    } else {
+      finishJob(sid, jb);
+    }
   }
 }
 
@@ -108,17 +243,23 @@ export interface SumEvent { sid: string; ok: boolean; title: string; kind?: "sum
 /** 收割退出进程：rc==0 且有输出 → summaries.json（text≤20000）。返回事件供 TUI 显示。 */
 export function pollJobs(): SumEvent[] {
   const events: SumEvent[] = [];
+  const now = Date.now() / 1000;
   for (const [sid, jb] of [...JOBS.entries()]) {
-    if (jb.proc.exitCode === null && jb.proc.signalCode === null) continue;
+    // 结束判定：本会话 spawn 用 exitCode/signalCode；收养作业用 result 事件（僵尸 pid 仍"存活"不可靠）
+    const done = jb.proc !== null
+      ? jb.proc.exitCode !== null || jb.proc.signalCode !== null
+      : parseStreamOut(jb.out)[2];
+    const timedOut = now - (jb.t0 || now) > SUMMARY_TIMEOUT;
+    if (!done && !timedOut) continue;
     JOBS.delete(sid);
-    let out = "";
-    try {
-      out = fs.readFileSync(jb.out, "utf-8").trim();
-    } catch { /* OSError → "" */ }
-    const ok = jb.proc.exitCode === 0 && out.length > 0;
-    if (jb.kind === "semantic") {                     // 语义任务：输出 [..sid..] JSON 数组，不落 summaries
+    if (timedOut && !done) {                        // 兜底：超时 kill
+      try { process.kill(jb.pid!, "SIGKILL"); } catch { /* ignore */ }
+    }
+    if (jb.kind === "semantic") {                   // 语义任务：输出 [..sid..] JSON 数组，不落 summaries
+      let out = "";
+      try { out = fs.readFileSync(jb.out, "utf-8").trim(); } catch { /* ignore */ }
       const sids: string[] = [];
-      if (ok) {
+      if (out) {
         const lo = out.indexOf("["), hi = out.lastIndexOf("]");
         if (lo >= 0 && hi > lo) {
           try {
@@ -130,17 +271,13 @@ export function pollJobs(): SumEvent[] {
       events.push({ sid, ok: sids.length > 0, title: jb.title, kind: "semantic", sids });
       continue;
     }
-    if (ok) {
-      const sums = loadSummaries();
-      sums[sid] = { text: out.slice(0, 20000), ts: Date.now() / 1000 };
-      saveSummaries(sums);
-    }
+    const ok = timedOut ? false : finishJob(sid, jb);
     events.push({ sid, ok, title: jb.title });
   }
   return events;
 }
 
-/** 收编孤儿输出（ccs 中途退出后 claude 仍写完 .out）；跳过 maxAge 秒内新文件防误收。 */
+/** 兼容旧签名：委托 adoptJobs（旧 .out 无 pid.t0 后缀，按 mtime 收编）。 */
 export function harvestSummaries(maxAgeSec = 120): void {
   const d = path.join(ccsHome(), "summarize");
   let names: string[];
@@ -151,17 +288,19 @@ export function harvestSummaries(maxAgeSec = 120): void {
   }
   let sums: Record<string, { text: string; ts: number }> | null = null;
   for (const fn of names) {
-    if (!fn.endsWith(".out")) continue;
+    if (!fn.endsWith(".out") || fn === "semantic.out") continue;
+    if (fn.slice(0, -4).split(".").length >= 3) continue;   // 新式自描述：交给 adoptJobs
     const p = path.join(d, fn);
     let st;
     try {
       st = fs.statSync(p);
     } catch { continue; }
     if (Date.now() / 1000 - st.mtimeMs / 1000 < maxAgeSec) continue;
-    let out = "";
-    try {
-      out = fs.readFileSync(p, "utf-8").trim();
-    } catch { continue; }
+    const [txt] = parseStreamOut(p);
+    let out = txt ?? "";
+    if (!out) {
+      try { out = fs.readFileSync(p, "utf-8").trim(); } catch { continue; }
+    }
     if (out) {
       if (sums === null) sums = loadSummaries();
       sums[fn.slice(0, -4)] = { text: out.slice(0, 20000), ts: st.mtimeMs / 1000 };

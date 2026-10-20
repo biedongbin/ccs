@@ -145,12 +145,14 @@ def main():
     # 查询带数字时间词 → 绕开 mtime 窗（基线确定性）；窗口语义由 test_ccs.py / tui.test.cjs 锁定
     argv_out = {
         "semantic": ccs.build_semantic_argv(sem_sessions, "15天前 修复登录"),
-        "summary": ccs.build_summary_argv(sem_sessions[0]),
+        "summary": ccs.build_summary_argv(),
         "resume_full": ccs.build_resume_argv(
             ccs.SessionMeta(sid="sid-weird'; rm -rf x", title="t", cwd="/w"),
             cmd="claude --resume {sid}"),
         "resume_base": ccs.build_resume_argv(
             ccs.SessionMeta(sid="deadbeef-1234", title="t", cwd="/w"), cmd="cc"),
+        "launch_default": ccs.build_launch_argv(),
+        "launch_custom": ccs.build_launch_argv("cc"),
     }
 
     out = {"parse": parse_out, "launch_dir": ld_out, "scan": scan_out,

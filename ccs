@@ -180,18 +180,18 @@ I18N_KEYS = (  # 有序：STRINGS 按 zip(keys, values) 展开，键序必须与
     "search_c", "sem_p", "sem_run", "sem_done", "sem_fail", "badge_sem")
 
 _LANG_DATA = {
-"zh": (" ↑↓ 选择 | / 搜索 | ? 内容搜 | Tab 选项目 | Esc 返回 | Enter 恢复 | a/u 归档还原 | d 删 | A 归档区 | y/Y 复制首问/末答 | o 阅读 | r 改名 | s 总结 | S 语义搜 | F5 重扫 | q 退出",
+"zh": (" ↑↓ 选择 | / 搜索 | ? 内容搜 | Tab 选项目 | Esc 返回 | Enter 恢复 | n 新开 | a/u 归档还原 | d 删 | A 归档区 | y/Y 复制首问/末答 | o 阅读 | r 改名 | s 总结 | S 语义搜 | F5 重扫 | q 退出",
        "ccs · {n}", "【归档区】", "[项目: {v}]", "[搜: {v}]", "+ 详情", "时间     标题",
        "标题", "项目", "分支", "ID", "首尾指令", "最后回复", "(无)",
        "搜索: ", " 项目过滤 ↑↓选择 回车确认 Esc取消 ", "全部", "终端太小 ({w}x{h}，需 ≥60x12)，q 退出",
        "该会话无 sessionId，无法恢复",        "已复制 {n} 字符到剪贴板", "无内容可复制", "无剪贴板工具（pbcopy/clip 均缺失）",
        "原目录 {p} 不存在，输入恢复目录(回车空=取消): ", "目录不存在: {p}，回车=自动创建 / 其他键=取消 ",
        "创建失败: {e}", "操作失败: {e}", "刚刚", "{n}分钟前", "{n}小时前", "{n}天前",
-       "AI 总结", "总结生成中…", "总结任务已发起: {t}", "总结完成: {t}", "总结失败: {t}",
+       "AI 总结", "总结生成中… {t}s  {p}%", "总结任务已发起: {t}", "总结完成: {t}", "总结失败: {t}",
        "重命名 [{t}]: ", "已改名: {t}",
        " ↑↓ 滚动 | Space 翻页 | g/G 首尾 | q 返回列表",
        "内容: ", "语义: ", "语义搜索中…", "语义匹配 {n} 个会话", "语义搜索失败", "[语义: {v}]"),
-"en": (" ↑↓ move | / search | ? content | Tab projects | Esc back | Enter resume | a/u archive-restore | d delete | A archive | y/Y copy first/last | o read | r rename | s summary | S semantic | F5 rescan | q quit",
+"en": (" ↑↓ move | / search | ? content | Tab projects | Esc back | Enter resume | n new | a/u archive-restore | d delete | A archive | y/Y copy first/last | o read | r rename | s summary | S semantic | F5 rescan | q quit",
        "ccs · {n}", "[ARCHIVE]", "[proj: {v}]", "[q: {v}]", "+ detail", "time     title",
        "title", "project", "branch", "ID", "first/last cmds", "last reply", "(none)",
        "search: ", " filter: ↑↓ select, Enter confirm, Esc cancel ", "ALL",
@@ -200,11 +200,11 @@ _LANG_DATA = {
        "original dir {p} gone, type resume dir (empty=cancel): ",
        "dir not found: {p}, Enter=create / other key=cancel ",
        "mkdir failed: {e}", "operation failed: {e}", "just now", "{n}m ago", "{n}h ago", "{n}d ago",
-       "AI summary", "summarizing…", "summary started: {t}", "summary done: {t}", "summary failed: {t}",
+       "AI summary", "summarizing… {t}s  {p}%", "summary started: {t}", "summary done: {t}", "summary failed: {t}",
        "rename [{t}]: ", "renamed: {t}",
        " ↑↓ scroll | Space page | g/G ends | q back",
        "content: ", "semantic: ", "semantic search running…", "semantic match: {n} sessions", "semantic search failed", "[semantic: {v}]"),
-"ja": (" ↑↓移動 | /検索 | ?内容 | Tabプロジェクト | Esc戻る | Enter復元 | a/uアーカイブ | d削除 | Aアーカイブ | y/Yコピー | o閲読 | r改名 | s要約 | S意味 | F5再読込 | q終了",
+"ja": (" ↑↓移動 | /検索 | ?内容 | Tabプロジェクト | Esc戻る | Enter復元 | n新規 | a/uアーカイブ | d削除 | Aアーカイブ | y/Yコピー | o閲読 | r改名 | s要約 | S意味 | F5再読込 | q終了",
        "ccs · {n}", "【アーカイブ】", "[proj: {v}]", "[検: {v}]", "+ 詳細", "時刻     タイトル",
        "タイトル", "プロジェクト", "ブランチ", "ID", "前後の指示", "最後の返信", "(なし)",
        "検索: ", " プロジェクト選択 ↑↓選択 Enter確定 Esc取消 ", "すべて",
@@ -213,11 +213,11 @@ _LANG_DATA = {
        "元ディレクトリ {p} がありません、復元先を入力(空で取消): ",
        "ディレクトリなし: {p}、Enter=作成 / 他キー=取消 ",
        "作成失敗: {e}", "操作失敗: {e}", "たった今", "{n}分前", "{n}時間前", "{n}日前",
-       "AI 要約", "要約生成中…", "要約タスク開始: {t}", "要約完了: {t}", "要約失敗: {t}",
+       "AI 要約", "要約生成中… {t}s  {p}%", "要約タスク開始: {t}", "要約完了: {t}", "要約失敗: {t}",
        "名前変更 [{t}]: ", "変更後: {t}",
        " ↑↓スクロール | Space改ページ | g/G先頭/末尾 | q戻る",
        "内容: ", "意味: ", "意味検索中…", "意味一致 {n} 件", "意味検索失敗", "[意味: {v}]"),
-"ko": (" ↑↓ 이동 | / 검색 | ? 내용 | Tab 프로젝트 | Esc 뒤로 | Enter 복원 | a/u 보관 | d 삭제 | A 보관함 | y/Y 복사 | o 읽기 | r 이름변경 | s 요약 | S 의미 | F5 재스캔 | q 종료",
+"ko": (" ↑↓ 이동 | / 검색 | ? 내용 | Tab 프로젝트 | Esc 뒤로 | Enter 복원 | n 새 대화 | a/u 보관 | d 삭제 | A 보관함 | y/Y 복사 | o 읽기 | r 이름변경 | s 요약 | S 의미 | F5 재스캔 | q 종료",
        "ccs · {n}", "[보관함]", "[proj: {v}]", "[q: {v}]", "+ 상세", "시간     제목",
        "제목", "프로젝트", "브랜치", "ID", "처음/끝 명령", "마지막 답변", "(없음)",
        "검색: ", " 프로젝트 필터 ↑↓선택 Enter확정 Esc취소 ", "전체",
@@ -226,11 +226,11 @@ _LANG_DATA = {
        "원래 디렉터리 {p} 없음, 복원할 경로 입력(빈칸=취소): ",
        "디렉터리 없음: {p}, Enter=생성 / 다른 키=취소 ",
        "생성 실패: {e}", "작업 실패: {e}", "방금", "{n}분 전", "{n}시간 전", "{n}일 전",
-       "AI 요약", "요약 생성 중…", "요약 시작: {t}", "요약 완료: {t}", "요약 실패: {t}",
+       "AI 요약", "요약 생성 중… {t}s  {p}%", "요약 시작: {t}", "요약 완료: {t}", "요약 실패: {t}",
        "이름 변경 [{t}]: ", "변경됨: {t}",
        " ↑↓ 스크롤 | Space 페이지 | g/G 처음/끝 | q 돌아가기",
        "내용: ", "의미: ", "의미 검색 중…", "의미 일치 {n}개", "의미 검색 실패", "[의미: {v}]"),
-"es": (" ↑↓ mover | / buscar | ? contenido | Tab proyectos | Esc atrás | Enter reanudar | a/u archivar | d borrar | A archivo | y/Y copiar | o leer | r renombrar | s resumen | S semántica | F5 reescanear | q salir",
+"es": (" ↑↓ mover | / buscar | ? contenido | Tab proyectos | Esc atrás | Enter reanudar | n nuevo | a/u archivar | d borrar | A archivo | y/Y copiar | o leer | r renombrar | s resumen | S semántica | F5 reescanear | q salir",
        "ccs · {n}", "[ARCHIVO]", "[proy: {v}]", "[b: {v}]", "+ detalle", "hora     título",
        "título", "proyecto", "rama", "ID", "primeros/últ cmds", "última respuesta", "(nada)",
        "buscar: ", " filtro: ↑↓ elegir, Enter confirmar, Esc cancelar ", "TODAS",
@@ -239,11 +239,11 @@ _LANG_DATA = {
        "dir original {p} no existe, escribe dir de reanudación (vacío=cancelar): ",
        "dir no encontrado: {p}, Enter=crear / otra tecla=cancelar ",
        "error al crear: {e}", "fallo de operación: {e}", "ahora", "hace {n}m", "hace {n}h", "hace {n}d",
-       "Resumen IA", "generando resumen…", "resumen iniciado: {t}", "resumen listo: {t}", "fallo de resumen: {t}",
+       "Resumen IA", "generando resumen… {t}s  {p}%", "resumen iniciado: {t}", "resumen listo: {t}", "fallo de resumen: {t}",
        "renombrar [{t}]: ", "renombrado: {t}",
        " ↑↓ desplazar | Space página | g/G extremos | q volver",
        "contenido: ", "semántica: ", "búsqueda semántica en curso…", "coincidencias: {n} sesiones", "búsqueda semántica fallida", "[semántica: {v}]"),
-"fr": (" ↑↓ déplacer | / rechercher | ? contenu | Tab projets | Esc retour | Enter reprendre | a/u archiver | d supprimer | A archives | y/Y copier | o lire | r renommer | s résumé | S sémantique | F5 rescanner | q quitter",
+"fr": (" ↑↓ déplacer | / rechercher | ? contenu | Tab projets | Esc retour | Enter reprendre | n nouveau | a/u archiver | d supprimer | A archives | y/Y copier | o lire | r renommer | s résumé | S sémantique | F5 rescanner | q quitter",
        "ccs · {n}", "[ARCHIVES]", "[proj: {v}]", "[q: {v}]", "+ détail", "heure     titre",
        "titre", "projet", "branche", "ID", "1res/derniers cmds", "dernière réponse", "(aucun)",
        "recherche : ", " filtre : ↑↓ choisir, Enter valider, Esc annuler ", "TOUTES",
@@ -252,11 +252,11 @@ _LANG_DATA = {
        "répertoire d'origine {p} absent, tapez répertoire de reprise (vide=annuler) : ",
        "répertoire introuvable : {p}, Enter=créer / autre touche=annuler ",
        "échec création : {e}", "échec : {e}", "à l'instant", "il y a {n}m", "il y a {n}h", "il y a {n}j",
-       "Résumé IA", "résumé en cours…", "résumé lancé : {t}", "résumé terminé : {t}", "échec du résumé : {t}",
+       "Résumé IA", "résumé en cours… {t}s  {p}%", "résumé lancé : {t}", "résumé terminé : {t}", "échec du résumé : {t}",
        "renommer [{t}] : ", "renommé : {t}",
        " ↑↓ défiler | Space page | g/G extrémités | q retour",
        "contenu : ", "sémantique : ", "recherche sémantique en cours…", "correspondances : {n} sessions", "échec de la recherche sémantique", "[sémantique : {v}]"),
-"de": (" ↑↓ bewegen | / suchen | ? Inhalt | Tab Projekte | Esc zurück | Enter fortsetzen | a/u archivieren | d löschen | A Archiv | y/Y kopieren | o lesen | r umbenennen | s Zusammenfassung | S Semantik | F5 neu einlesen | q beenden",
+"de": (" ↑↓ bewegen | / suchen | ? Inhalt | Tab Projekte | Esc zurück | Enter fortsetzen | n neu | a/u archivieren | d löschen | A Archiv | y/Y kopieren | o lesen | r umbenennen | s Zusammenfassung | S Semantik | F5 neu einlesen | q beenden",
        "ccs · {n}", "[ARCHIV]", "[proj: {v}]", "[q: {v}]", "+ Detail", "Zeit     Titel",
        "Titel", "Projekt", "Branch", "ID", "erste/letzte Befehle", "letzte Antwort", "(nichts)",
        "Suche: ", " Filter: ↑↓ wählen, Enter bestätigen, Esc abbrechen ", "ALLE",
@@ -265,11 +265,11 @@ _LANG_DATA = {
        "Original-Verzeichnis {p} fehlt, Resume-Verzeichnis eingeben (leer=Abbruch): ",
        "Verzeichnis fehlt: {p}, Enter=erstellen / andere Taste=abbrechen ",
        "Erstellen fehlgeschlagen: {e}", "Fehler: {e}", "gerade", "vor {n}M", "vor {n}S", "vor {n}T",
-       "KI-Zusammenfassung", "Zusammenfassung läuft…", "Zusammenfassung gestartet: {t}", "Zusammenfassung fertig: {t}", "Zusammenfassung fehlgeschlagen: {t}",
+       "KI-Zusammenfassung", "Zusammenfassung läuft… {t}s  {p}%", "Zusammenfassung gestartet: {t}", "Zusammenfassung fertig: {t}", "Zusammenfassung fehlgeschlagen: {t}",
        "umbenennen [{t}]: ", "umbenannt: {t}",
        " ↑↓ scrollen | Space Seite | g/G Enden | q zurück",
        "Inhalt: ", "Semantik: ", "semantische Suche läuft…", "semantische Treffer: {n} Sitzungen", "semantische Suche fehlgeschlagen", "[Semantik: {v}]"),
-"ru": (" ↑↓ вниз/вверх | / поиск | ? содержимое | Tab проекты | Esc назад | Enter возобновить | a/u архив | d удалить | A архив | y/Y копировать | o чтение | r переим. | s обзор | S смысл | F5 пересканировать | q выход",
+"ru": (" ↑↓ вниз/вверх | / поиск | ? содержимое | Tab проекты | Esc назад | Enter возобновить | n новый | a/u архив | d удалить | A архив | y/Y копировать | o чтение | r переим. | s обзор | S смысл | F5 пересканировать | q выход",
        "ccs · {n}", "[АРХИВ]", "[proj: {v}]", "[q: {v}]", "+ детали", "время     заголовок",
        "заголовок", "проект", "ветка", "ID", "перв/посл команды", "последний ответ", "(нет)",
        "поиск: ", " фильтр: ↑↓ выбрать, Enter подтвердить, Esc отмена ", "ВСЕ",
@@ -278,11 +278,11 @@ _LANG_DATA = {
        "исходный каталог {p} отсутствует, введите каталог возобновления (пусто=отмена): ",
        "каталог не найден: {p}, Enter=создать / другая клавиша=отмена ",
        "ошибка создания: {e}", "сбой: {e}", "только что", "{n}м назад", "{n}ч назад", "{n}д назад",
-       "ИИ-резюме", "создание резюме…", "резюме запущено: {t}", "резюме готово: {t}", "ошибка резюме: {t}",
+       "ИИ-резюме", "создание резюме… {t}s  {p}%", "резюме запущено: {t}", "резюме готово: {t}", "ошибка резюме: {t}",
        "переименовать [{t}]: ", "переименовано: {t}",
        " ↑↓ прокрутка | Space страница | g/G края | q назад",
        "содержимое: ", "смысл: ", "семантический поиск…", "семантических совпадений: {n}", "ошибка семантического поиска", "[смысл: {v}]"),
-"pt": (" ↑↓ mover | / buscar | ? conteúdo | Tab projetos | Esc voltar | Enter retomar | a/u arquivar | d excluir | A arquivo | y/Y copiar | o ler | r renomear | s resumo | S semântica | F5 reescanear | q sair",
+"pt": (" ↑↓ mover | / buscar | ? conteúdo | Tab projetos | Esc voltar | Enter retomar | n novo | a/u arquivar | d excluir | A arquivo | y/Y copiar | o ler | r renomear | s resumo | S semântica | F5 reescanear | q sair",
        "ccs · {n}", "[ARQUIVO]", "[proj: {v}]", "[q: {v}]", "+ detalhes", "hora     título",
        "título", "projeto", "branch", "ID", "1ºs/últimos cmds", "última resposta", "(nada)",
        "buscar: ", " filtro: ↑↓ escolher, Enter confirmar, Esc cancelar ", "TODAS",
@@ -291,11 +291,11 @@ _LANG_DATA = {
        "diretório original {p} ausente, digite diretório (vazio=cancelar): ",
        "diretório não encontrado: {p}, Enter=criar / outra tecla=cancelar ",
        "falha ao criar: {e}", "falha: {e}", "agora", "há {n}m", "há {n}h", "há {n}d",
-       "Resumo IA", "gerando resumo…", "resumo iniciado: {t}", "resumo completo: {t}", "falha no resumo: {t}",
+       "Resumo IA", "gerando resumo… {t}s  {p}%", "resumo iniciado: {t}", "resumo completo: {t}", "falha no resumo: {t}",
        "renomear [{t}]: ", "renomeado: {t}",
        " ↑↓ rolar | Space página | g/G extremos | q voltar",
        "conteúdo: ", "semântica: ", "busca semântica em curso…", "correspondências: {n} sessões", "busca semântica falhou", "[semântica: {v}]"),
-"it": (" ↑↓ sposta | / cerca | ? contenuto | Tab progetti | Esc indietro | Enter riprendi | a/u archivia | d elimina | A archivio | y/Y copia | o leggere | r rinomina | s riepilogo | S semantica | F5 riscansiona | q esci",
+"it": (" ↑↓ sposta | / cerca | ? contenuto | Tab progetti | Esc indietro | Enter riprendi | n nuovo | a/u archivia | d elimina | A archivio | y/Y copia | o leggere | r rinomina | s riepilogo | S semantica | F5 riscansiona | q esci",
        "ccs · {n}", "[ARCHIVIO]", "[proj: {v}]", "[q: {v}]", "+ dettaglio", "ora     titolo",
        "titolo", "progetto", "ramo", "ID", "primi/ultimi comandi", "ultima risposta", "(nessuno)",
        "cerca: ", " filtro: ↑↓ scegli, Enter conferma, Esc annulla ", "TUTTE",
@@ -304,7 +304,7 @@ _LANG_DATA = {
        "dir originale {p} assente, digita dir di ripresa (vuoto=annulla): ",
        "dir inesistente: {p}, Enter=crea / altro tasto=annulla ",
        "creazione fallita: {e}", "errore: {e}", "adesso", "{n}m fa", "{n}h fa", "{n}g fa",
-       "Riassunto IA", "generazione riassunto…", "riassunto avviato: {t}", "riassunto pronto: {t}", "riassunto fallito: {t}",
+       "Riassunto IA", "generazione riassunto… {t}s  {p}%", "riassunto avviato: {t}", "riassunto pronto: {t}", "riassunto fallito: {t}",
        "rinominare [{t}]: ", "rinominato: {t}",
        " ↑↓ scorri | Space pagina | g/G estremità | q indietro",
        "contenuto: ", "semantica: ", "ricerca semantica in corso…", "corrispondenze: {n} sessioni", "ricerca semantica fallita", "[semantica: {v}]"),
@@ -586,31 +586,178 @@ def save_summaries(sums: dict):
         json.dump(sums, f, ensure_ascii=False)
     os.replace(tmp, summaries_path())
 
-JOBS = {}   # key -> {proc, out, title, kind}；kind: summary|semantic；随 ccs 退出即弃
+JOBS = {}   # key -> {proc, out, conv, title, kind, t0, pid}；kind: summary|semantic；summary 作业跨 ccs 退出存活
 
-def build_summary_argv(m: SessionMeta) -> list:
-    prompt = (f"请读取并分析这个 Claude Code 会话记录文件：{m.path}（sessionId={m.sid}）。"
-              "输出（中文 Markdown，简洁分节）："
-              "1) 会话/需求的所有核心目标；"
-              "2) 整体任务工作计划与进度百分比；"
-              "3) 当前代码分支状态；"
-              "4) 本会话解决了哪些问题，列出问题清单。")
-    return ["claude", "-p", prompt, "--allowedTools", "Read"]
+SUMMARY_TIMEOUT = 400        # 兜底上限（秒）：超时 kill 并报失败
+EXPECTED_BYTES = 4000        # 进度估算基准：实测典型总结产出字节数
+STDIN_MAX = 8 * 1024 * 1024  # claude -p stdin 硬上限 10MB，留余量；超出改走文件路径
+
+_SUMMARY_ASK = ("请据此输出中文 Markdown（简洁分节）："
+                "1) 会话/需求的所有核心目标；"
+                "2) 整体任务工作计划与进度百分比；"
+                "3) 当前代码分支状态；"
+                "4) 本会话解决了哪些问题，列出问题清单。")
+
+SUMMARY_PROMPT = ("以下是某个 Claude Code 会话的完整对话流（含用户指令、助手思考、工具调用与结果）。"
+                  + _SUMMARY_ASK)
+
+def build_summary_argv() -> list:
+    """stdin 版 argv：对话流直喂，模型不再用 Read 读整份 .jsonl（省 69% 元数据信封）。"""
+    return ["claude", "-p", SUMMARY_PROMPT,
+            "--output-format", "stream-json", "--include-partial-messages", "--verbose"]
+
+def build_summary_file_argv(conv_path: str) -> list:
+    """大对话流（>8MB，超 stdin 上限）改走文件路径 + Read 工具。"""
+    return ["claude", "-p", f"请读取并分析这个对话流文件：{conv_path}。" + _SUMMARY_ASK,
+            "--allowedTools", "Read",
+            "--output-format", "stream-json", "--include-partial-messages", "--verbose"]
+
+def write_conv_stream(src: str, dst: str) -> bool:
+    """把 .jsonl 会话记录压成纯对话流（仅 user/assistant 的 message），写 dst。
+    保留全部内容块（thinking/tool_use/tool_result）——只剥离 JSON 元数据信封，零失真。"""
+    try:
+        with open(src, encoding="utf-8") as f, open(dst, "w", encoding="utf-8") as w:
+            for line in f:
+                try:
+                    o = json.loads(line)
+                except Exception:
+                    continue
+                if not isinstance(o, dict) or o.get("type") not in ("user", "assistant"):
+                    continue
+                if o.get("isSidechain"):
+                    continue
+                m = o.get("message")
+                if not isinstance(m, dict):
+                    continue
+                w.write(json.dumps({"role": m.get("role"), "content": m.get("content")},
+                                   ensure_ascii=False) + "\n")
+    except OSError:
+        return False
+    return True
+
+def _pid_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+        return True
+    except (OSError, ValueError):
+        return False
+
+def parse_stream_out(path: str):
+    """解析 stream-json 输出。返回 (最终文本|None, 已产出字节数, 是否见 result)。半截输出不抛错。"""
+    text = None; produced = 0; saw_result = False
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    o = json.loads(line)
+                except Exception:
+                    continue
+                if not isinstance(o, dict):
+                    continue
+                if o.get("type") == "result":
+                    saw_result = True
+                    if isinstance(o.get("result"), str):
+                        text = o["result"]
+                elif o.get("type") == "stream_event":
+                    d = (o.get("event") or {}).get("delta") or {}
+                    if d.get("type") == "text_delta" and isinstance(d.get("text"), str):
+                        produced += len(d["text"])
+    except OSError:
+        pass
+    return text, produced, saw_result
+
+def job_progress(jb: dict) -> tuple:
+    """(已运行秒数, 估算百分比)。t0 缺失（旧版作业）→ (0, 0)。"""
+    t0 = jb.get("t0") or 0
+    el = int(_time.time() - t0) if t0 else 0
+    _t, produced, _r = parse_stream_out(jb["out"])
+    pct = 100 if jb.get("done") else min(95, produced * 100 // EXPECTED_BYTES)
+    return el, pct
 
 def start_summary(m: SessionMeta) -> bool:
     d = os.path.join(paths()[1], "summarize")
     os.makedirs(d, exist_ok=True)
-    outp = os.path.join(d, f"{m.sid}.out")
-    try:
-        proc = _subprocess.Popen(build_summary_argv(m), stdout=open(outp, "wb"),
-                                 stderr=_subprocess.DEVNULL, cwd=m.cwd or None)
-    except OSError:
+    t0 = _time.time()
+    conv = os.path.join(d, f"{m.sid}.conv")
+    if not write_conv_stream(m.path, conv):
         return False
-    JOBS[m.sid] = {"proc": proc, "out": outp, "title": m.title}
+    outp = os.path.join(d, f"{m.sid}.{os.getpid()}.{int(t0)}.out")   # 自描述：sid.pid.t0.out
+    big = os.path.getsize(conv) > STDIN_MAX   # 超 stdin 上限 → 改走文件路径 + Read
+    try:
+        proc = _subprocess.Popen(
+            build_summary_file_argv(conv) if big else build_summary_argv(),
+            stdin=_subprocess.DEVNULL if big else open(conv, "rb"),
+            stdout=open(outp, "wb"), stderr=_subprocess.DEVNULL,
+            cwd=m.cwd or None, start_new_session=True)   # 脱离会话：ccs 退出不被 SIGHUP 连带
+    except OSError:
+        try:
+            os.remove(conv)
+        except OSError:
+            pass
+        return False
+    JOBS[m.sid] = {"proc": proc, "out": outp, "conv": conv, "title": m.title,
+                   "t0": t0, "pid": proc.pid}
     return True
 
+def _finish_job(sid: str, jb: dict):
+    """收尾单个已结束的 summary 作业：写 summaries.json，清 .out/.conv。返回 True=成功。"""
+    text, _, _r = parse_stream_out(jb["out"])
+    ok = bool(text)
+    if ok:
+        sums = load_summaries()
+        sums[sid] = {"text": text[:20000], "ts": _time.time()}
+        save_summaries(sums)
+    for p in (jb.get("out"), jb.get("conv")):
+        if p:
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+    return ok
+
+def adopt_jobs():
+    """启动时收养：扫 *.out，解析 sid.pid.t0；pid 存活→注册进 JOBS（跨重启续显），
+    已死→收编结果，超时→kill。替代旧 harvest（旧法按 mtime 猜完成，会误收半截输出）。"""
+    d = os.path.join(paths()[1], "summarize")
+    try:
+        names = os.listdir(d)
+    except OSError:
+        return
+    now = _time.time()
+    for fn in names:
+        if not fn.endswith(".out") or fn == "semantic.out":
+            continue
+        parts = fn[:-4].rsplit(".", 2)      # sid.pid.t0
+        if len(parts) != 3:
+            continue
+        sid, pid_s, t0_s = parts
+        try:
+            pid, t0 = int(pid_s), float(t0_s)
+        except ValueError:
+            continue
+        outp = os.path.join(d, fn)
+        conv = os.path.join(d, f"{sid}.conv")
+        jb = {"proc": None, "out": outp, "conv": conv, "title": sid, "t0": t0, "pid": pid}
+        _t, _p, saw = parse_stream_out(outp)
+        if saw:                                 # 已见 result：结果完整，直接收编（不必等 pid）
+            _finish_job(sid, jb)
+        elif now - t0 > SUMMARY_TIMEOUT:        # 无 result 且超时：kill 并清
+            try:
+                os.kill(pid, 9)
+            except OSError:
+                pass
+            for p in (outp, conv):
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
+        elif _pid_alive(pid):
+            JOBS[sid] = jb                      # 仍在跑：续显"运行中 + 秒数"
+        else:
+            _finish_job(sid, jb)                # 进程已结束但无 result：收编（空输出→丢弃）
+
 def harvest_summaries(max_age: float = 120):
-    """收编孤儿输出：ccs 中途退出后 claude 仍写完 .out；下次启动收编（跳过新近文件防误收）。"""
+    """兼容旧签名：委托 adopt_jobs（旧 .out 无 pid.t0 后缀，按 mtime 收编）。"""
     d = os.path.join(paths()[1], "summarize")
     try:
         names = os.listdir(d)
@@ -618,24 +765,29 @@ def harvest_summaries(max_age: float = 120):
         return
     sums = None
     for fn in names:
-        if not fn.endswith(".out"):
+        if not fn.endswith(".out") or fn == "semantic.out":
             continue
         p = os.path.join(d, fn)
+        if len(fn[:-4].rsplit(".", 2)) == 3:    # 新式自描述：交给 adopt_jobs
+            continue
         try:
             if _time.time() - os.stat(p).st_mtime < max_age:
                 continue
-            out = open(p, encoding="utf-8").read().strip()
+            text, _ = parse_stream_out(p)
+            if text is None:                    # 非 stream-json（旧纯文本输出）
+                text = open(p, encoding="utf-8").read().strip()
         except OSError:
             continue
-        if out:
+        if text:
             if sums is None:
                 sums = load_summaries()
-            sums[fn[:-4]] = {"text": out[:20000], "ts": os.stat(p).st_mtime}
+            sums[fn[:-4]] = {"text": text[:20000], "ts": os.stat(p).st_mtime}
         os.remove(p)
     if sums is not None:
         save_summaries(sums)
 
 DEFAULT_RESUME_CMD = "claude --resume {sid}"
+DEFAULT_LAUNCH_CMD = "claude --dangerously-skip-permissions"
 
 def resume_cmd_full(cmd: str) -> str:
     """用户只填基础命令（如 cc）：不含 {sid} 时系统自动追加 --resume {sid}；
@@ -652,6 +804,13 @@ def build_resume_argv(m: SessionMeta, cmd: str = DEFAULT_RESUME_CMD) -> list:
         return build_direct_argv(m, cmd=cmd)
     sh = os.environ.get("SHELL") or "/bin/sh"
     return [sh, "-ic", resume_cmd_full(cmd).format(sid=_shlex.quote(m.sid))]   # D1: sid 出自文件名可被构造，shell 串必须加引号
+
+def build_launch_argv(cmd: str = DEFAULT_LAUNCH_CMD) -> list:
+    """n 新开对话：与 resume 同链路交交互 shell 执行（函数/alias 与终端一致），无 {sid}。"""
+    if os.name == "nt":
+        return _shlex.split(cmd)
+    sh = os.environ.get("SHELL") or "/bin/sh"
+    return [sh, "-ic", cmd]
 
 class AppState:
     def __init__(self, sessions, archive_view=False):
@@ -941,7 +1100,9 @@ def _detail_lines(m, width, sums=None):
             lines += bar + [[(T("ai_summary"), lab)]] \
                 + [[(t, 0)] for t in _md_lines(s["text"], width)]
         elif m.sid in JOBS:
-            lines += bar + [[(T("ai_summary"), lab)]] + [[(T("sum_run"), dim)]]
+            el, pct = job_progress(JOBS[m.sid])
+            lines += bar + [[(T("ai_summary"), lab)]] \
+                + [[(T("sum_run").format(t=el, p=pct), dim)]]
     shown = list(m.first_cmds or [])
     lc = list(m.last_cmds or [])
     if lc and (not shown or lc[0] not in shown):      # 总数>6：中间省略
@@ -983,39 +1144,56 @@ def _clamp_off(cursor: int, off: int, n: int, cap: int) -> int:
         off = cursor - cap + 1
     return off
 
-def _resume(stdscr, st, row, cmd=DEFAULT_RESUME_CMD):
-    m = st.current()
-    if not m or not m.sid:
-        return T("no_sid")
-    cwd_ok = bool(m.cwd) and os.path.isdir(m.cwd)
-    eff = m.cwd
-    if not cwd_ok:
-        ans = _prompt(stdscr, row, T("gone_input").format(p=m.cwd or "-"))
-        if not ans:
-            return None
-        eff = os.path.expanduser(ans)
-        if not os.path.isdir(eff):
-            _safe_add(stdscr, row, 0, T("gone_conf").format(p=eff))
-            stdscr.refresh()
-            try:
-                if stdscr.getkey() not in ("\n", "KEY_ENTER"):
-                    return None
-            except curses.error:
-                return None
-            try:
-                os.makedirs(eff, exist_ok=True)
-            except OSError as e:
-                return T("mk_fail").format(e=e)
-    dargv = build_resume_argv(m, cmd=cmd)
+def _resolve_dir(stdscr, row, eff: str):
+    """目录缺失交互（Enter 恢复与 n 新开共用）。返回 (目录|None, 错误消息|None)。"""
+    if bool(eff) and os.path.isdir(eff):
+        return eff, None
+    ans = _prompt(stdscr, row, T("gone_input").format(p=eff or "-"))
+    if not ans:
+        return None, None
+    eff = os.path.expanduser(ans)
+    if not os.path.isdir(eff):
+        _safe_add(stdscr, row, 0, T("gone_conf").format(p=eff))
+        stdscr.refresh()
+        try:
+            if stdscr.getkey() not in ("\n", "KEY_ENTER"):
+                return None, None
+        except curses.error:
+            return None, None
+        try:
+            os.makedirs(eff, exist_ok=True)
+        except OSError as e:
+            return None, T("mk_fail").format(e=e)
+    return eff, None
+
+def _exec_takeover(eff: str, dargv: list):
+    """resume/launch 共用尾段：预检→收 TUI→落目录→exec 原地接管（正常不返回）。"""
     if not _shutil.which(dargv[0]):              # D3: exec 前预检——失败在 TUI 内报错，终端不拆
         return T("op_fail").format(e=f"{dargv[0]}: not found")
     curses.endwin()
     if eff != os.getcwd():
-        os.chdir(eff)                                # 落回会话原启动目录再恢复
+        os.chdir(eff)
     try:
         os.execvp(dargv[0], dargv)                   # 当前终端接管，正常不返回
     except OSError as e:
         return T("op_fail").format(e=e)
+
+def _resume(stdscr, st, row, cmd=DEFAULT_RESUME_CMD):
+    m = st.current()
+    if not m or not m.sid:
+        return T("no_sid")
+    eff, err = _resolve_dir(stdscr, row, m.cwd)
+    if err or eff is None:
+        return err
+    return _exec_takeover(eff, build_resume_argv(m, cmd=cmd))
+
+def _launch(stdscr, st, row, cmd=DEFAULT_LAUNCH_CMD):
+    """n：在当前行项目目录新开对话（项目过滤视图=选中项目），接管方式与 Enter 恢复一致。"""
+    m = st.current()
+    eff, err = _resolve_dir(stdscr, row, m.cwd if m else (st.project or os.getcwd()))
+    if err or eff is None:
+        return err
+    return _exec_takeover(eff, build_launch_argv(cmd))
 
 def _prompt(stdscr, y, label) -> str:
     curses.echo()
@@ -1074,6 +1252,10 @@ def run_config_plain(cfg: dict, first_run: bool) -> None:
     raw = input().strip()
     if raw:
         cfg["resume_cmd"] = raw
+    print(f"launch_cmd [{cfg.get('launch_cmd', DEFAULT_LAUNCH_CMD)}] (n key, new session): ", end="")
+    raw = input().strip()
+    if raw:
+        cfg["launch_cmd"] = raw
     save_config(cfg)
     print(f"saved -> {config_path()}")
 
@@ -1085,6 +1267,10 @@ _CONFIG_DESCS = {
     "resume_cmd": "恢复命令。只需填基础命令（如 cc 或 claude --dangerously-skip-permissions）——"
                   "按 Enter 恢复时系统自动追加 --resume {sid} 并替换为会话 ID；已含 {sid} 的完整模板同样兼容。"
                   "整条命令交给你的交互 shell（$SHELL -ic）执行，函数、alias、内嵌环境变量与终端行为一致"
+                  "（例如 zshrc 里包装的 cc()）。",
+    "launch_cmd": "新开命令（n 键）。在会话面板按 n 即切换到当前行项目目录并执行此命令、"
+                  "原地新开一个对话（不恢复旧会话）。默认 claude --dangerously-skip-permissions；"
+                  "与恢复命令同链路：整条交交互 shell（$SHELL -ic）执行，函数/alias 生效"
                   "（例如 zshrc 里包装的 cc()）。",
     "custom": "自定义调色板：Enter 即可创建——输入主题名，选强调色与消息色（各 8 种，带色块预览），"
               "保存后自动启用；已有主题可一键使用或删除。强调色作用于边框/时间列/选中行底色，"
@@ -1098,6 +1284,7 @@ def config_rows(cfg: dict):
         ("lang", "语言 lang", cfg.get("lang", "zh"), _CONFIG_DESCS["lang"]),
         ("theme", "主题 theme", cfg.get("theme", "default"), _CONFIG_DESCS["theme"]),
         ("resume_cmd", "恢复命令 resume_cmd", cfg.get("resume_cmd", DEFAULT_RESUME_CMD), _CONFIG_DESCS["resume_cmd"]),
+        ("launch_cmd", "新开命令 launch_cmd", cfg.get("launch_cmd", DEFAULT_LAUNCH_CMD), _CONFIG_DESCS["launch_cmd"]),
         ("custom", "自定义调色板 custom", f"{len(custom)} 项", _CONFIG_DESCS["custom"]),
     ]
 
@@ -1258,6 +1445,7 @@ def _config_tui(stdscr, cfg: dict):
         disp = {"lang": cfg.get("lang", "zh"),
                 "theme": cfg.get("theme", "default"),
                 "resume_cmd": resume_cmd_full(cfg.get("resume_cmd", DEFAULT_RESUME_CMD)),
+                "launch_cmd": cfg.get("launch_cmd", DEFAULT_LAUNCH_CMD),
                 "custom": f"{len(_user_themes(cfg))} 项"}
         y = 3
         for i, (key, label, _val, desc) in enumerate(rows):
@@ -1342,6 +1530,24 @@ def _config_tui(stdscr, cfg: dict):
                         msg = "已更新 updated"
                     else:
                         msg = "留空不改动 unchanged"
+            elif key == "launch_cmd":
+                v = _detail_page(stdscr, cfg, "新开命令 launch_cmd",
+                                 _CONFIG_DESCS["launch_cmd"]
+                                 + f"\n\n当前值 current: `{cfg.get('launch_cmd', DEFAULT_LAUNCH_CMD)}`",
+                                 [("编辑命令 edit command", curses.A_BOLD, "__edit__")],
+                                 keys=" Enter 编辑 edit · Esc 返回 back")
+                if v == "__edit__":
+                    _safe_add(stdscr, H - 2, 0, " " * (W - 1), 0)
+                    _safe_add(stdscr, H - 2, 1, "launch_cmd:", msg_attr)
+                    s = _config_input(stdscr, H - 2, 13, W,
+                                      cfg.get("launch_cmd", DEFAULT_LAUNCH_CMD))
+                    if s is None:
+                        msg = "已取消 cancelled"
+                    elif s.strip():
+                        cfg["launch_cmd"] = s.strip()
+                        msg = "已更新 updated"
+                    else:
+                        msg = "留空不改动 unchanged"
             else:
                 names = list(_user_themes(cfg))
                 cur = cfg.get("theme", "default")
@@ -1393,8 +1599,10 @@ def main(argv) -> int:
         cfg = load_config()
         _LANG = cfg.get("lang", "zh")
     resume_cmd = cfg.get("resume_cmd", DEFAULT_RESUME_CMD)
+    launch_cmd = cfg.get("launch_cmd", DEFAULT_LAUNCH_CMD)
     st = AppState(scan(refresh=args.refresh), archive_view=args.archive)
-    harvest_summaries()
+    harvest_summaries()   # 旧式孤儿 .out（无 pid.t0 后缀）
+    adopt_jobs()          # 新式自描述作业：跨重启续显 / 超时清理
     st.project = os.path.realpath(os.getcwd())   # 无条件锚定当前目录（realpath 归一）：无会话则空列表；Esc 查看全部
     projects_dir, home = paths()
 
@@ -1432,15 +1640,39 @@ def main(argv) -> int:
         curses.curs_set(0)
         border_attr, sel_attr, time_attr, msg_attr = _palette_attrs(cfg)
         while True:
-            for sid in [s0 for s0, jb in JOBS.items() if jb["proc"].poll() is not None]:
-                jb = JOBS.pop(sid)
-                try:
-                    out = open(jb["out"], encoding="utf-8").read().strip()
-                except OSError:
-                    out = ""
-                if jb.get("kind") == "semantic":
+            now0 = _time.time()
+            for sid in list(JOBS.keys()):
+                jb = JOBS[sid]
+                proc = jb.get("proc")
+                kind = jb.get("kind")
+                # 结束判定：本会话 spawn 用 poll()；收养作业用 result 事件（僵尸 pid 仍"存活"不可靠）
+                if proc is not None:
+                    done = proc.poll() is not None
+                else:
+                    _t, _p, saw = parse_stream_out(jb["out"])
+                    done = saw
+                timed_out = (now0 - (jb.get("t0") or now0)) > SUMMARY_TIMEOUT
+                if not done and not timed_out:
+                    continue
+                JOBS.pop(sid, None)
+                if timed_out and not done:                       # 兜底：超时 kill
+                    if proc is not None:
+                        try:
+                            proc.kill()
+                        except OSError:
+                            pass
+                    elif jb.get("pid"):
+                        try:
+                            os.kill(jb["pid"], 9)
+                        except OSError:
+                            pass
+                if kind == "semantic":
+                    try:
+                        out = open(jb["out"], encoding="utf-8").read().strip()
+                    except OSError:
+                        out = ""
                     sids = []
-                    if jb["proc"].returncode == 0 and out:
+                    if out and not timed_out:
                         try:
                             sids = json.loads(out[out.index("["):out.rindex("]") + 1])
                         except (ValueError, json.JSONDecodeError):
@@ -1448,14 +1680,14 @@ def main(argv) -> int:
                     st = _rebuild_sem(st, set(sids))
                     msg = (T("sem_done").format(n=len(sids)) if sids
                            else T("sem_fail"))
-                elif jb["proc"].returncode == 0 and out:
-                    sums0 = load_summaries()
-                    sums0[sid] = {"text": out[:20000], "ts": _time.time()}
-                    save_summaries(sums0)
-                    st.sums = sums0
-                    msg = T("sum_done").format(t=jb["title"][:24])
                 else:
-                    msg = T("sum_fail").format(t=jb["title"][:24])
+                    jb["done"] = True
+                    ok = False if timed_out else _finish_job(sid, jb)
+                    if ok:
+                        st.sums = load_summaries()
+                        msg = T("sum_done").format(t=jb["title"][:24])
+                    else:
+                        msg = T("sum_fail").format(t=jb["title"][:24])
             stdscr.erase()
             H, W = stdscr.getmaxyx()
             if H < 12 or W < 60:
@@ -1682,6 +1914,10 @@ def main(argv) -> int:
                 r = _resume(stdscr, st, H - 1 - nh, cmd=resume_cmd)   # 提示画在状态行，不压帮助行
                 if r is not None:
                     msg = r
+            elif k == "n":                                # 当前行项目目录直接新开对话
+                r = _launch(stdscr, st, H - 1 - nh, cmd=launch_cmd)
+                if r is not None:
+                    msg = r
             elif k == "y" and st.current():
                 msg = _copy(st.current().first_user)          # 复制首条提问
             elif k == "Y" and st.current():
@@ -1691,7 +1927,8 @@ def main(argv) -> int:
                 if not cur0.sid:
                     msg = T("no_sid")
                 elif cur0.sid in JOBS:
-                    msg = T("sum_run")
+                    el, pct = job_progress(JOBS[cur0.sid])
+                    msg = T("sum_run").format(t=el, p=pct)
                 else:
                     msg = (T("sum_started").format(t=cur0.title[:24]) if start_summary(cur0)
                            else T("sum_fail").format(t=cur0.title[:24]))
