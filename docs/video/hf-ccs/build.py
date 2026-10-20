@@ -304,6 +304,9 @@ def main():
         out = out.replace('lang="zh-CN"', 'lang="en"')
         out = out.replace('data-composition-id="ccs-demo"', 'data-composition-id="ccs-demo-en"')
         out = out.replace('window.__timelines["ccs-demo"]', 'window.__timelines["ccs-demo-en"]')
+        out = out.replace('src="assets/', 'src="assets-en/')
+        out = (out.replace('tui-v2-main.png', 'main.png').replace('tui-v2-slash.png', 'slash.png')
+                 .replace('tui-v2-done.png', 'done.png').replace('tui-config.png', 'config.png'))
     open("index.html", "w").write(out)
     print(f"index.html: {len(out)} bytes, {len(SCENES)} scenes, lang={os.environ.get('VIDEO_LANG', 'zh')}")
 

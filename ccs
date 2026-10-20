@@ -1089,10 +1089,10 @@ def _detail_lines(m, width, sums=None):
         lab = val = dim = curses.A_BOLD
     bar = [[("-" * max(4, width), dim)]]      # 分割线是"一行"，行内一个段
     lines = [
-        [(_pad(T("f_title"), 5), lab), (m.title, val)],
-        [(_pad(T("f_project"), 5), lab), (m.cwd.replace(tilde, "~"), 0)],
-        [(_pad(T("f_branch"), 5), lab), (m.branch or "-", 0), (f"   {m.size // 1024} KB", dim)],
-        [(_pad(T("f_id"), 5), lab), (m.sid, dim)],
+        [(_pad(T("f_title"), 8), lab), (m.title, val)],
+        [(_pad(T("f_project"), 8), lab), (m.cwd.replace(tilde, "~"), 0)],
+        [(_pad(T("f_branch"), 8), lab), (m.branch or "-", 0), (f"   {m.size // 1024} KB", dim)],
+        [(_pad(T("f_id"), 8), lab), (m.sid, dim)],
     ]
     if sums is not None:
         s = sums.get(m.sid)
@@ -1730,10 +1730,10 @@ def main(argv) -> int:
                 t = rel_time(m.mtime, now)
                 if off + j == st.cursor:
                     _safe_add(stdscr, y, 1, " " * lw, sel_attr)
-                    _safe_add(stdscr, y, 1, _pad(t, 7) + " " + _cut(m.title, lw - 9), sel_attr)
+                    _safe_add(stdscr, y, 1, _pad(t, 9) + " " + _cut(m.title, lw - 11), sel_attr)
                 else:
-                    _safe_add(stdscr, y, 1, _pad(t, 7), time_attr)
-                    _safe_add(stdscr, y, 9, _cut(m.title, lw - 8))
+                    _safe_add(stdscr, y, 1, _pad(t, 9), time_attr)
+                    _safe_add(stdscr, y, 11, _cut(m.title, lw - 10))
             if n > vis_h:                             # 左栏滚动指示
                 pos = it + 1 + round(off / max(1, n - vis_h) * (vis_h - 1))
                 _safe_add(stdscr, min(pos, ib), LW - 1, "|", sel_attr)

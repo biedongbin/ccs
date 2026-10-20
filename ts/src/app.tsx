@@ -307,10 +307,10 @@ export function CcsApp(props: Props) {
     const bar = { text: "-".repeat(Math.max(4, width)), kind: "dim" as const };
     const vw = Math.max(8, width - 6);               // R2-1: 值按栏宽截断——超长 sid/cwd 交 ink 自动换行会溢出次行
     const out: { text: string; kind: "lab" | "val" | "dim" }[] = [
-      { text: pad(T("f_title"), 5) + cut(m.title, vw), kind: "lab" as const },
-      { text: pad(T("f_project"), 5) + cut(tilde(m.cwd), vw), kind: "lab" as const },
-      { text: pad(T("f_branch"), 5) + cut(m.branch || "-", vw) + `   ${Math.floor(m.size / 1024)} KB`, kind: "lab" as const },
-      { text: pad(T("f_id"), 5) + cut(m.sid, vw), kind: "lab" as const },
+      { text: pad(T("f_title"), 8) + cut(m.title, vw), kind: "lab" as const },
+      { text: pad(T("f_project"), 8) + cut(tilde(m.cwd), vw), kind: "lab" as const },
+      { text: pad(T("f_branch"), 8) + cut(m.branch || "-", vw) + `   ${Math.floor(m.size / 1024)} KB`, kind: "lab" as const },
+      { text: pad(T("f_id"), 8) + cut(m.sid, vw), kind: "lab" as const },
     ];
     const s = sums[m.sid];
     if (s && s.text) {
@@ -431,7 +431,7 @@ export function CcsApp(props: Props) {
             const t = relTime(m.mtime);
             return (
               <Text key={m.path} backgroundColor={sel ? acc.accent : undefined}
-                color={sel ? "black" : undefined}>{pad(t, 7) + " " + cut(m.title, LW - 10)}</Text>
+                color={sel ? "black" : undefined}>{pad(t, 9) + " " + cut(m.title, LW - 12)}</Text>
             );
           })}
         </Box>
