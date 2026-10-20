@@ -264,6 +264,31 @@ scene(26.4, 3.6, """
 # ---------- assemble ----------
 from string import Template
 
+# ---------- i18n: VIDEO_LANG=en translates the generated html ----------
+ZH2EN = [
+  ("跨目录找回 Claude Code 全部会话", "Find every Claude Code session, across all directories"),
+  ("只列<b style=\"color:#f4f4f5;\">当前目录</b>的会话 —— 换个仓库就找不到",
+   "only lists <b style=\"color:#f4f4f5;\">this directory</b>&#39;s sessions — switch repos and they&#39;re gone"),
+  ("扫描<b class=\"kw\">全库</b> · 一张列表 · 回车<b class=\"kw\">恢复到原目录</b>",
+   "Every project in <b class=\"kw\">one list</b> · Enter <b class=\"kw\">resumes in its original directory</b>"),
+  ("一行装好 · <b class=\"kw\">即装即用</b>", "One line · <b class=\"kw\">ready to run</b>"),
+  ("主列表 · 所有项目的会话", "Master list · every project"),
+  ("详情栏 · 可复制", "Detail pane · copyable"),
+  ("一栏看全快捷键", "All shortcuts in one bar"),
+  ("主从双栏 · <b class=\"kw\">详情栏</b>纯文本可复制 · 底部<b class=\"kw\">快捷键</b>一栏看全",
+   "Master&#8211;detail · <b class=\"kw\">copyable</b> detail pane · every <b class=\"kw\">shortcut</b> in one bar"),
+  ("按 <b class=\"kw\">/</b> 搜索：标题 / 项目路径 / 会话 ID",
+   "Press <b class=\"kw\">/</b> to search: title / path / session ID"),
+  ("输入「视频」→ 列表实时过滤到 1 条", "Type a keyword &#8594; the list filters live to 1 hit"),
+  ("视频：理解 answer-me-with-html 的视频实现原理", "Video: how answer-me-with-html renders explainer videos"),
+  ("已恢复到会话当初的启动目录", "Resumed in the session&#39;s original directory"),
+  ("chdir + exec 原地接管 · 上下文全在", "chdir + exec in place · full context intact"),
+  ("<b>10</b> 语言", "<b>10</b> languages"),
+  ("<b>4+</b> 主题", "<b>4+</b> themes"),
+  ("<b>自定义</b> 调色板", "<b>Custom</b> palettes"),
+  ("跨目录找回 Claude Code 会话", "Find any Claude Code session, in any directory"),
+]
+
 def main():
     html_parts, tween_parts = [], []
     for start, dur, html, tweens in SCENES:
@@ -271,8 +296,16 @@ def main():
         tween_parts.append(tweens)
     out = Template(HEAD).safe_substitute(
         scenes="\n".join(html_parts), tweens="\n".join(tween_parts))
+    import os
+    if os.environ.get("VIDEO_LANG") == "en":
+        for zh, en in ZH2EN:
+            assert zh in out, "i18n miss: " + zh[:30]
+            out = out.replace(zh, en)
+        out = out.replace('lang="zh-CN"', 'lang="en"')
+        out = out.replace('data-composition-id="ccs-demo"', 'data-composition-id="ccs-demo-en"')
+        out = out.replace('window.__timelines["ccs-demo"]', 'window.__timelines["ccs-demo-en"]')
     open("index.html", "w").write(out)
-    print(f"index.html: {len(out)} bytes, {len(SCENES)} scenes")
+    print(f"index.html: {len(out)} bytes, {len(SCENES)} scenes, lang={os.environ.get('VIDEO_LANG', 'zh')}")
 
 if __name__ == "__main__":
     main()

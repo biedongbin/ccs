@@ -33,9 +33,9 @@ That's it. Pick a session, hit `Enter`, and your terminal is taken over in place
 
 ## Demo video
 
-See what ccs is and how to use it in 30 seconds ([the raw MP4](docs/video/ccs-demo.zh.mp4)):
+See what ccs is and how to use it in 30 seconds ([the raw MP4](docs/video/ccs-demo.en.mp4)):
 
-[![ccs demo video](docs/video/ccs-demo.thumb.png)](docs/video/ccs-demo.zh.mp4)
+[![ccs demo video](docs/video/ccs-demo.en.thumb.png)](docs/video/ccs-demo.en.mp4)
 
 ## What you get — at a glance
 

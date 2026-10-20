@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1920, height=1080" />
@@ -44,22 +44,22 @@
     </style>
   </head>
   <body>
-    <div id="root" data-composition-id="ccs-demo" data-start="0" data-duration="30" data-fps="30" data-width="1920" data-height="1080">
+    <div id="root" data-composition-id="ccs-demo-en" data-start="0" data-duration="30" data-fps="30" data-width="1920" data-height="1080">
 
       <div class="scene clip" data-start="0" data-duration="1.4" data-track-index="0">
         <div id="t-logo" class="g0" class="mono" style="font-size:230px; font-weight:800; color:#f4f4f5;">ccs</div>
-        <div id="t-sub" class="g0" style="margin-top:18px; font-size:46px; color:#9ca3af;">跨目录找回 Claude Code 全部会话</div>
+        <div id="t-sub" class="g0" style="margin-top:18px; font-size:46px; color:#9ca3af;">Find every Claude Code session, across all directories</div>
       </div>
 
 
       <div class="scene clip" data-start="1.4" data-duration="3.0" data-track-index="0">
         <div id="p1" class="g0" style="position:absolute; left:0; right:0; top:340px; text-align:center;">
           <div class="mono bad" style="font-size:96px; font-weight:700;">claude --resume</div>
-          <div class="dim" style="font-size:44px; margin-top:22px;">只列<b style="color:#f4f4f5;">当前目录</b>的会话 —— 换个仓库就找不到</div>
+          <div class="dim" style="font-size:44px; margin-top:22px;">only lists <b style="color:#f4f4f5;">this directory</b>&#39;s sessions — switch repos and they&#39;re gone</div>
         </div>
         <div id="p2" class="g0" style="position:absolute; left:0; top:340px; width:1920px; text-align:center;">
           <div style="font-size:130px; font-weight:800; color:#58c4da;">ccs</div>
-          <div style="font-size:50px; color:#e5e7eb; margin-top:16px;">扫描<b class="kw">全库</b> · 一张列表 · 回车<b class="kw">恢复到原目录</b></div>
+          <div style="font-size:50px; color:#e5e7eb; margin-top:16px;">Every project in <b class="kw">one list</b> · Enter <b class="kw">resumes in its original directory</b></div>
         </div>
       </div>
 
@@ -75,7 +75,7 @@
             <div id="i-done" class="g0 dim mono" style="margin-top:18px; font-size:26px;">ccs → ~/.local/bin ✓</div>
           </div>
         </div>
-        <div id="i-note" class="g0" style="margin-top:44px; font-size:42px; color:#e5e7eb;">一行装好 · <b class="kw">即装即用</b></div>
+        <div id="i-note" class="g0" style="margin-top:44px; font-size:42px; color:#e5e7eb;">One line · <b class="kw">ready to run</b></div>
       </div>
 
 
@@ -83,17 +83,17 @@
         <div id="m-wrap" class="g0" style="position:relative; width:1920px;">
           <img class="shot" src="assets/tui-v2-main.png" style="width:1800px;" />
           <div id="m-ann-list" class="ann g0" style="left:42px; top:60px; width:768px; height:520px;">
-            <div class="tag">主列表 · 所有项目的会话</div>
+            <div class="tag">Master list · every project</div>
           </div>
           <div id="m-ann-detail" class="ann g0" style="left:990px; top:60px; width:768px; height:520px;">
-            <div class="tag">详情栏 · 可复制</div>
+            <div class="tag">Detail pane · copyable</div>
           </div>
           <div id="m-ann-keys" class="ann g0" style="left:42px; top:520px; width:1716px; height:150px;">
-            <div class="tag below">一栏看全快捷键</div>
+            <div class="tag below">All shortcuts in one bar</div>
           </div>
         </div>
         <div id="m-title" class="g0" style="margin-top:48px; font-size:44px; color:#e5e7eb;">
-          主从双栏 · <b class="kw">详情栏</b>纯文本可复制 · 底部<b class="kw">快捷键</b>一栏看全
+          Master&#8211;detail · <b class="kw">copyable</b> detail pane · every <b class="kw">shortcut</b> in one bar
         </div>
       </div>
 
@@ -101,7 +101,7 @@
       <div class="scene clip" data-start="13.4" data-duration="4.8" data-track-index="0">
         <div id="s-key" class="g0" style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:36px;">
           <div class="kcap" style="width:150px; height:150px; font-size:80px;">/</div>
-          <div style="font-size:56px; color:#e5e7eb;">按 <b class="kw">/</b> 搜索：标题 / 项目路径 / 会话 ID</div>
+          <div style="font-size:56px; color:#e5e7eb;">Press <b class="kw">/</b> to search: title / path / session ID</div>
         </div>
         <div id="s-shot1" class="g0" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
           <img class="shot" src="assets/tui-v2-slash.png" style="width:1850px;" />
@@ -109,7 +109,7 @@
         <div id="s-shot2" class="g0" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
           <img class="shot" src="assets/tui-v2-done.png" style="width:1850px;" />
           <div id="s-cap2" class="g0" style="position:absolute; bottom:70px; left:0; right:0; text-align:center; font-size:40px; color:#e5e7eb;">
-            输入「视频」→ 列表实时过滤到 1 条
+            Type a keyword &#8594; the list filters live to 1 hit
           </div>
         </div>
       </div>
@@ -121,15 +121,15 @@
             <div id="r-l1"><span class="p mono">$</span> <span class="mono">ccs</span></div>
             <div id="r-l2" class="g0" style="margin:10px 0; padding:14px 22px; border:2px solid #58c4da; border-radius:10px;">
               <span class="mono dim" style="font-size:26px;">10-20</span>
-              <b style="margin-left:18px;">视频：理解 answer-me-with-html 的视频实现原理</b>
+              <b style="margin-left:18px;">Video: how answer-me-with-html renders explainer videos</b>
               <span class="mono dim" style="float:right;">870b25d3</span>
             </div>
             <div id="r-l3" class="g0" style="margin-top:12px;"><span class="p mono">$</span> <span class="mono">claude --resume 870b25d3…</span></div>
           </div>
           <div id="r-ok" class="g0" style="position:absolute; inset:0; background:#11151c; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px;">
             <div class="good" style="font-size:110px;">✓</div>
-            <div style="font-size:50px; color:#f4f4f5;">已恢复到会话当初的启动目录</div>
-            <div class="dim" style="font-size:30px;">chdir + exec 原地接管 · 上下文全在</div>
+            <div style="font-size:50px; color:#f4f4f5;">Resumed in the session&#39;s original directory</div>
+            <div class="dim" style="font-size:30px;">chdir + exec in place · full context intact</div>
           </div>
         </div>
       </div>
@@ -140,9 +140,9 @@
           <img class="shot" src="assets/tui-config.png" style="width:1500px;" />
         </div>
         <div id="c-chips" class="g0" style="margin-top:40px; display:flex; gap:40px;">
-          <div class="chip"><b>10</b> 语言</div>
-          <div class="chip"><b>4+</b> 主题</div>
-          <div class="chip"><b>自定义</b> 调色板</div>
+          <div class="chip"><b>10</b> languages</div>
+          <div class="chip"><b>4+</b> themes</div>
+          <div class="chip"><b>Custom</b> palettes</div>
         </div>
       </div>
 
@@ -150,7 +150,7 @@
       <div class="scene clip" data-start="26.4" data-duration="3.6" data-track-index="0">
         <div style="display:flex; align-items:baseline; gap:24px;">
           <div id="e-logo" class="g0 mono" style="font-size:150px; font-weight:800; color:#f4f4f5;">ccs</div>
-          <div id="e-sub" class="g0" style="font-size:40px; color:#9ca3af;">跨目录找回 Claude Code 会话</div>
+          <div id="e-sub" class="g0" style="font-size:40px; color:#9ca3af;">Find any Claude Code session, in any directory</div>
         </div>
         <div id="e-cmd" class="g0 term" style="margin-top:50px; padding:24px 40px; width:fit-content;">
           <span class="p mono" style="font-size:36px;">$</span>
@@ -235,7 +235,7 @@
 
       tl.seek(0);
       window.__timelines = window.__timelines || {};
-      window.__timelines["ccs-demo"] = tl;
+      window.__timelines["ccs-demo-en"] = tl;
     </script>
   </body>
 </html>
