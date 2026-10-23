@@ -53,14 +53,20 @@ ccs
 
 ## 安装
 
-三种方式任选（npm 包为 **Node 原生版**，与 Python 版功能等价、共用 `~/.ccs/` 数据）：
+两条渠道：**npm**（预编译 Node/ink 版）或 **curl**（纯 Python）。两者功能等价、共用同一份 `~/.ccs/` 数据，任选其一。
+
+**npm — 一行装完，直接可用。** 包内已带编译好的 `dist/`，无需自行构建：
 
 ```bash
-# npm（Node ≥18；npx 免安装直接跑）
-npx ccs-claude-session
-npm i -g ccs-claude-session   # ccs = Node 版；ccs-py = Python 壳（需 python3）
+npm i -g ccs-claude-session   # 需 Node ≥18
+ccs
+```
 
-# curl 一键（macOS / Linux，纯 Python）
+`npm i -g` 会装两个命令：`ccs`（Node/ink 原生版）与 `ccs-py`（Python 版，需 python3），两者共用同一份 `~/.ccs/` 数据。只想临时试用、不装到全局，用 `npx ccs-claude-session` 效果相同。
+
+**curl — macOS / Linux，纯 Python：**
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/biedongbin/claude-code-session-manager/main/install.sh | sh
 ```
 

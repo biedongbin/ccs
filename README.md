@@ -55,14 +55,20 @@ See what ccs is and how to use it in 30 seconds — English and 中文 versions:
 
 ## Install
 
-Three channels — the npm package ships a **native Node (ink) build** feature-equal to the Python one, both sharing `~/.ccs/` data:
+Two channels: **npm** (prebuilt Node/ink build) or **curl** (pure Python). They are feature-equal and share the same `~/.ccs/` data — pick either.
+
+**npm — one command, then run it.** The tarball ships prebuilt `dist/`, so no compile step:
 
 ```bash
-# npm (Node ≥18; npx works without installing)
-npx ccs-claude-session
-npm i -g ccs-claude-session   # ccs = Node build; ccs-py = Python twin (needs python3)
+npm i -g ccs-claude-session   # Node ≥18
+ccs
+```
 
-# curl one-liner (macOS / Linux, pure Python)
+`npm i -g` installs two commands: `ccs` (native Node/ink build) and `ccs-py` (Python twin, needs python3). Both read and write the same `~/.ccs/` data. To try it without installing, `npx ccs-claude-session` does the same thing.
+
+**curl — macOS / Linux, pure Python:**
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/biedongbin/claude-code-session-manager/main/install.sh | sh
 ```
 
