@@ -1,4 +1,6 @@
-<h1 align="center">ccs</h1>
+<h1 align="center">claude-code-session-manager</h1>
+
+<p align="center"><sub>即 <code>ccs</code> 命令</sub></p>
 
 <p align="center">
   <a href="README.md"><img src="https://img.shields.io/badge/🇺🇸_English-read_in_english-blue?style=for-the-badge" alt="English"></a>
@@ -25,7 +27,7 @@ Claude Code 内置的 `--resume` 选择器只列**当前目录**的会话、元�
 **ccs** 直接读取 `~/.claude/projects/`，用一个主从双栏 TUI 一次解决：所有项目里由人打开过的会话进同一张列表，标题干净，详情栏可复制，一键恢复——**回到会话当初被启动的那个目录**。
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/biedongbin/claude-code-session-manager/main/install.sh | sh
 ccs
 ```
 
@@ -59,13 +61,13 @@ npx claude-code-sessions
 npm i -g claude-code-sessions   # ccs = Node 版；ccs-py = Python 壳（需 python3）
 
 # curl 一键（macOS / Linux，纯 Python）
-curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/biedongbin/claude-code-session-manager/main/install.sh | sh
 ```
 
 或从源码：
 
 ```bash
-git clone https://github.com/biedongbin/ccs.git && cd ccs
+git clone https://github.com/biedongbin/claude-code-session-manager.git && cd ccs
 chmod +x ccs && ln -sf "$(pwd)/ccs" ~/.local/bin/ccs
 ```
 
@@ -75,7 +77,7 @@ Windows 的 Python 标准库不带 curses——先装补齐包，再用 `python`
 
 ```powershell
 pip install windows-curses
-curl.exe -fsSL -o ccs https://raw.githubusercontent.com/biedongbin/ccs/main/ccs
+curl.exe -fsSL -o ccs https://raw.githubusercontent.com/biedongbin/claude-code-session-manager/main/ccs
 python ccs          # 或: Set-Alias ccs "python <路径>\ccs"
 ```
 

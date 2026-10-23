@@ -1,4 +1,6 @@
-<h1 align="center">ccs</h1>
+<h1 align="center">claude-code-session-manager</h1>
+
+<p align="center"><sub>the <code>ccs</code> command</sub></p>
 
 <p align="center">
   <a href="README.zh-CN.md"><img src="https://img.shields.io/badge/🌐_简体中文-点我阅读中文-red?style=for-the-badge" alt="简体中文"></a>
@@ -25,7 +27,7 @@ Claude Code's built-in `--resume` picker only lists sessions of the **current** 
 **ccs** reads `~/.claude/projects/` directly and fixes that in one master-detail TUI: every human-opened session from every project in a single list, with clean titles, a copyable detail pane, and one-key resume — **into the exact directory the session was launched from**.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/biedongbin/claude-code-session-manager/main/install.sh | sh
 ccs
 ```
 
@@ -61,13 +63,13 @@ npx claude-code-sessions
 npm i -g claude-code-sessions   # ccs = Node build; ccs-py = Python twin (needs python3)
 
 # curl one-liner (macOS / Linux, pure Python)
-curl -fsSL https://raw.githubusercontent.com/biedongbin/ccs/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/biedongbin/claude-code-session-manager/main/install.sh | sh
 ```
 
 Or from a clone:
 
 ```bash
-git clone https://github.com/biedongbin/ccs.git && cd ccs
+git clone https://github.com/biedongbin/claude-code-session-manager.git && cd ccs
 chmod +x ccs && ln -sf "$(pwd)/ccs" ~/.local/bin/ccs
 ```
 
@@ -77,7 +79,7 @@ Windows Python has no curses in the standard library — install the shim first,
 
 ```powershell
 pip install windows-curses
-curl.exe -fsSL -o ccs https://raw.githubusercontent.com/biedongbin/ccs/main/ccs
+curl.exe -fsSL -o ccs https://raw.githubusercontent.com/biedongbin/claude-code-session-manager/main/ccs
 python ccs          # or: Set-Alias ccs "python <path>\ccs"
 ```
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 # ccs 一键安装：下载单文件 ccs 到 PATH 下的 ~/.local/bin
 set -e
-SRC="https://raw.githubusercontent.com/biedongbin/ccs/main/ccs"
+SRC="https://raw.githubusercontent.com/biedongbin/claude-code-session-manager/main/ccs"
 BIN="${CCS_BIN:-$HOME/.local/bin}"
 mkdir -p "$BIN"
 if command -v curl >/dev/null 2>&1; then

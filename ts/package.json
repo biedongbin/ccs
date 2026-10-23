@@ -4,10 +4,10 @@
   "description": "Cross-directory manager for Claude Code sessions: browse/search/archive/resume — native Node (ink) TUI, Python twin included",
   "license": "MIT",
   "author": "biedongbin",
-  "homepage": "https://github.com/biedongbin/ccs#readme",
+  "homepage": "https://github.com/biedongbin/claude-code-session-manager#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/biedongbin/ccs.git"
+    "url": "git+https://github.com/biedongbin/claude-code-session-manager.git"
   },
   "keywords": [
     "claude-code",
