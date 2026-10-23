@@ -54,7 +54,7 @@
 
 ### R7 分发
 
-- 三渠道：`npx claude-code-sessions` / `npm i -g`（`ccs`=Node 版、`ccs-py`=Python 版）/ curl 脚本（纯 Python）
+- 三渠道：`npx ccs-claude-session` / `npm i -g`（`ccs`=Node 版、`ccs-py`=Python 版）/ curl 脚本（纯 Python）
 - npm 包双 bin 共存，共用 `~/.ccs/` 数据；Windows 补 `windows-curses` 后 best-effort 支持
 
 ## 3. 非目标

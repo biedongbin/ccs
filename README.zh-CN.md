@@ -57,8 +57,8 @@ ccs
 
 ```bash
 # npm（Node ≥18；npx 免安装直接跑）
-npx claude-code-sessions
-npm i -g claude-code-sessions   # ccs = Node 版；ccs-py = Python 壳（需 python3）
+npx ccs-claude-session
+npm i -g ccs-claude-session   # ccs = Node 版；ccs-py = Python 壳（需 python3）
 
 # curl 一键（macOS / Linux，纯 Python）
 curl -fsSL https://raw.githubusercontent.com/biedongbin/claude-code-session-manager/main/install.sh | sh

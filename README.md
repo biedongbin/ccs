@@ -59,8 +59,8 @@ Three channels — the npm package ships a **native Node (ink) build** feature-e
 
 ```bash
 # npm (Node ≥18; npx works without installing)
-npx claude-code-sessions
-npm i -g claude-code-sessions   # ccs = Node build; ccs-py = Python twin (needs python3)
+npx ccs-claude-session
+npm i -g ccs-claude-session   # ccs = Node build; ccs-py = Python twin (needs python3)
 
 # curl one-liner (macOS / Linux, pure Python)
 curl -fsSL https://raw.githubusercontent.com/biedongbin/claude-code-session-manager/main/install.sh | sh
