@@ -1,6 +1,6 @@
 {
   "name": "ccs-claude-session",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Cross-directory manager for Claude Code sessions: browse/search/archive/resume — native Node (ink) TUI, Python twin included",
   "license": "MIT",
   "author": "biedongbin",

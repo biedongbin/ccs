@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /** ccs Node 版 CLI 入口：--config / -a / -r / --check / 首跑问答 / TUI。 */
 import * as fs from "fs";
 import * as os from "os";
